@@ -39,7 +39,11 @@ public class AdminAuthService extends BaseService {
     
     public Future<AdminLoginResponseDto> login(AdminLoginDto dto, String clientIp) {
         // Rate Limiting 체크 (5회 실패 시 30분 차단)
-        return rateLimiter.checkAdminLoginAttempt(clientIp)
+        if (rateLimiter == null) {
+            // Redis 연결 실패 시 Rate Limiting 없이 진행
+            log.warn("RateLimiter not available, skipping rate limit check");
+        } else {
+            return rateLimiter.checkAdminLoginAttempt(clientIp)
             .compose(allowed -> {
                 if (!allowed) {
                     return Future.failedFuture(new BadRequestException(
@@ -79,6 +83,37 @@ public class AdminAuthService extends BaseService {
                                 .build()
                         );
                     });
+            });
+        }
+        
+        // RateLimiter가 null일 때는 바로 로그인 처리
+        return adminRepository.getAdminByLoginId(pool, dto.getId())
+            .compose(admin -> {
+                if (admin == null) {
+                    return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
+                }
+                
+                // 비밀번호 검증
+                if (!BCrypt.checkpw(dto.getPassword(), admin.getPasswordHash())) {
+                    return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
+                }
+                
+                // 관리자 권한 확인
+                UserRole adminRole = admin.getRole() == 3 ? UserRole.SUPER_ADMIN : UserRole.ADMIN;
+                
+                // 관리자 토큰 생성 (1시간 만료)
+                String accessToken = AuthUtils.generateToken(jwtAuth, admin.getId(), adminRole, 3600);
+                
+                // 관리자 로그인 로깅
+                log.info("Admin login successful - adminId: {}, role: {}, ip: {}", 
+                    admin.getId(), adminRole, clientIp);
+                
+                return Future.succeededFuture(
+                    AdminLoginResponseDto.builder()
+                        .accessToken(accessToken)
+                        .adminId(admin.getLoginId())
+                        .build()
+                );
             });
     }
 }

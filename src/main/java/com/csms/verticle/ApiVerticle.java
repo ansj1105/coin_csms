@@ -34,6 +34,7 @@ public class ApiVerticle extends AbstractVerticle {
     }
     
     private ServiceFactory serviceFactory;
+    private io.vertx.redis.client.RedisAPI redisApi;
     
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
@@ -46,29 +47,33 @@ public class ApiVerticle extends AbstractVerticle {
         // ServiceFactory 초기화
         serviceFactory = DefaultServiceFactory.create(vertx, config);
         
-        // Router 생성
-        Router mainRouter = Router.router(vertx);
-        
-        // 전역 핸들러 설정
-        setupGlobalHandlers(mainRouter);
-        
-        // 도메인별 라우터 등록
-        registerRouters(mainRouter);
-        
-        // HTTP 서버 시작
-        HttpServerOptions serverOptions = new HttpServerOptions()
-            .setCompressionSupported(true);
-        
-        vertx.createHttpServer(serverOptions)
-            .requestHandler(mainRouter)
-            .listen(port, http -> {
-                if (http.succeeded()) {
-                    log.info("HTTP API server started on port {}", port);
-                    startPromise.complete();
-                } else {
-                    log.error("Failed to start HTTP server", http.cause());
-                    startPromise.fail(http.cause());
-                }
+        // Redis 연결 (RateLimiter용)
+        connectRedis(config)
+            .compose(v -> {
+                // Router 생성
+                Router mainRouter = Router.router(vertx);
+                
+                // 전역 핸들러 설정
+                setupGlobalHandlers(mainRouter);
+                
+                // 도메인별 라우터 등록
+                registerRouters(mainRouter);
+                
+                // HTTP 서버 시작
+                HttpServerOptions serverOptions = new HttpServerOptions()
+                    .setCompressionSupported(true);
+                
+                return vertx.createHttpServer(serverOptions)
+                    .requestHandler(mainRouter)
+                    .listen(port);
+            })
+            .onSuccess(http -> {
+                log.info("HTTP API server started on port {}", port);
+                startPromise.complete();
+            })
+            .onFailure(throwable -> {
+                log.error("Failed to start HTTP server", throwable);
+                startPromise.fail(throwable);
             });
     }
     
@@ -117,11 +122,78 @@ public class ApiVerticle extends AbstractVerticle {
     }
     
     /**
+     * Redis 연결
+     */
+    private io.vertx.core.Future<Void> connectRedis(JsonObject config) {
+        JsonObject redisConfig = config.getJsonObject("redis", new JsonObject());
+        String mode = redisConfig.getString("mode", "standalone");
+        
+        io.vertx.redis.client.RedisOptions options = new io.vertx.redis.client.RedisOptions();
+        
+        String password = redisConfig.getString("password");
+        if (password != null && !password.isEmpty()) {
+            options.setPassword(password);
+        }
+        
+        switch (mode) {
+            case "cluster" -> {
+                options.setType(io.vertx.redis.client.RedisClientType.CLUSTER);
+                io.vertx.core.json.JsonArray nodes = redisConfig.getJsonArray("nodes", new io.vertx.core.json.JsonArray());
+                if (nodes.isEmpty()) {
+                    options.addConnectionString("redis://localhost:7001");
+                    options.addConnectionString("redis://localhost:7002");
+                    options.addConnectionString("redis://localhost:7003");
+                } else {
+                    for (int i = 0; i < nodes.size(); i++) {
+                        options.addConnectionString(nodes.getString(i));
+                    }
+                }
+            }
+            case "sentinel" -> {
+                options.setType(io.vertx.redis.client.RedisClientType.SENTINEL);
+                options.setMasterName(redisConfig.getString("masterName", "mymaster"));
+                options.setRole(io.vertx.redis.client.RedisRole.MASTER);
+                io.vertx.core.json.JsonArray sentinels = redisConfig.getJsonArray("sentinels", new io.vertx.core.json.JsonArray());
+                if (sentinels.isEmpty()) {
+                    options.addConnectionString("redis://localhost:26379");
+                } else {
+                    for (int i = 0; i < sentinels.size(); i++) {
+                        options.addConnectionString(sentinels.getString(i));
+                    }
+                }
+            }
+            default -> {
+                options.setType(io.vertx.redis.client.RedisClientType.STANDALONE);
+                String host = redisConfig.getString("host", "localhost");
+                int port = redisConfig.getInteger("port", 6379);
+                options.setConnectionString("redis://" + host + ":" + port);
+            }
+        }
+        
+        options.setMaxPoolSize(redisConfig.getInteger("maxPoolSize", 8));
+        options.setMaxPoolWaiting(redisConfig.getInteger("maxPoolWaiting", 32));
+        
+        io.vertx.redis.client.Redis redisClient = io.vertx.redis.client.Redis.createClient(vertx, options);
+        
+        return redisClient.connect()
+            .map(conn -> {
+                log.info("Redis connected for RateLimiter");
+                redisApi = io.vertx.redis.client.RedisAPI.api(conn);
+                return null;
+            })
+            .recover(err -> {
+                log.warn("Failed to connect Redis for RateLimiter, continuing without rate limiting", err);
+                // Redis 연결 실패해도 서버는 시작 (RateLimiter는 null 체크 필요)
+                return io.vertx.core.Future.succeededFuture();
+            });
+    }
+    
+    /**
      * 도메인별 라우터 등록
      * 각 도메인 모듈의 Handler를 등록합니다.
      */
     private void registerRouters(Router mainRouter) {
-        // User 도메인 등록 예시
+        // User 도메인
         com.csms.user.repository.UserRepository userRepository = new com.csms.user.repository.UserRepository();
         com.csms.user.service.UserService userService = new com.csms.user.service.UserService(
             serviceFactory.getPool(),
@@ -134,8 +206,49 @@ public class ApiVerticle extends AbstractVerticle {
             userService,
             serviceFactory.getJwtAuth()
         );
-        
         mainRouter.mountSubRouter("/api/v1/users", userHandler.getRouter());
+        
+        // Admin 도메인
+        com.csms.admin.repository.AdminRepository adminRepository = new com.csms.admin.repository.AdminRepository();
+        // RateLimiter는 Redis 연결이 실패해도 null일 수 있으므로 체크 필요
+        com.csms.common.utils.RateLimiter rateLimiter = redisApi != null 
+            ? new com.csms.common.utils.RateLimiter(redisApi)
+            : null; // Redis 연결 실패 시 null (RateLimiter에서 null 체크 필요)
+        com.csms.admin.service.AdminAuthService adminAuthService = new com.csms.admin.service.AdminAuthService(
+            serviceFactory.getPool(),
+            adminRepository,
+            serviceFactory.getJwtAuth(),
+            serviceFactory.getJwtConfig(),
+            rateLimiter
+        );
+        com.csms.admin.handler.AdminAuthHandler adminAuthHandler = new com.csms.admin.handler.AdminAuthHandler(
+            vertx,
+            adminAuthService
+        );
+        mainRouter.mountSubRouter("/api/v1/admin/auth", adminAuthHandler.getRouter());
+        
+        // Admin Dashboard
+        com.csms.admin.service.AdminDashboardService adminDashboardService = new com.csms.admin.service.AdminDashboardService(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.handler.AdminDashboardHandler adminDashboardHandler = new com.csms.admin.handler.AdminDashboardHandler(
+            vertx,
+            adminDashboardService,
+            serviceFactory.getJwtAuth()
+        );
+        mainRouter.mountSubRouter("/api/v1/admin", adminDashboardHandler.getRouter());
+        
+        // Currency 도메인
+        com.csms.currency.repository.CurrencyRepository currencyRepository = new com.csms.currency.repository.CurrencyRepository();
+        com.csms.currency.service.CurrencyService currencyService = new com.csms.currency.service.CurrencyService(
+            serviceFactory.getPool(),
+            currencyRepository
+        );
+        com.csms.currency.handler.CurrencyHandler currencyHandler = new com.csms.currency.handler.CurrencyHandler(
+            vertx,
+            currencyService
+        );
+        mainRouter.mountSubRouter("/api/v1/currencies", currencyHandler.getRouter());
         
         log.info("Routers registered");
     }

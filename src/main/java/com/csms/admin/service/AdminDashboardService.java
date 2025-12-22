@@ -34,24 +34,39 @@ public class AdminDashboardService extends BaseRepository {
         return Future.all(
             getTotalStats(range),
             getChartData(range),
-            getTopMembers()
+            getTopMembers(),
+            getNotifications(),
+            getTopReferrers()
         ).map(result -> {
             DashboardStatsDto.StatsDto stats = result.resultAt(0);
             List<DashboardStatsDto.ChartDataDto> chartData = result.resultAt(1);
             List<DashboardStatsDto.TopMemberDto> topMembers = result.resultAt(2);
+            List<DashboardStatsDto.NotificationDto> notifications = result.resultAt(3);
+            List<DashboardStatsDto.TopReferrerDto> topReferrers = result.resultAt(4);
             
             return DashboardStatsDto.builder()
                 .stats(stats)
                 .chartData(chartData)
                 .topMembers(topMembers)
+                .notifications(notifications)
+                .topReferrers(topReferrers)
                 .build();
         });
     }
     
     private Future<DashboardStatsDto.StatsDto> getTotalStats(DateRange range) {
+        // 오늘 날짜 계산
+        LocalDate today = LocalDate.now();
+        LocalDateTime todayStart = today.atStartOfDay();
+        LocalDateTime todayEnd = today.atTime(23, 59, 59);
+        
         String sql = """
             SELECT 
                 COALESCE(SUM(CASE WHEN mh.id IS NOT NULL THEN mh.amount ELSE 0 END), 0) as total_mined,
+                COALESCE(COUNT(DISTINCT CASE WHEN td.id IS NOT NULL AND td.created_at >= :today_start AND td.created_at <= :today_end THEN td.id END), 0) as today_deposit_count,
+                COALESCE(COUNT(DISTINCT CASE WHEN pd.id IS NOT NULL AND pd.created_at >= :today_start AND pd.created_at <= :today_end THEN pd.id END), 0) as today_payment_count,
+                COALESCE(COUNT(DISTINCT CASE WHEN e.id IS NOT NULL AND e.created_at >= :today_start AND e.created_at <= :today_end THEN e.id END), 0) as today_exchange_count,
+                COALESCE(COUNT(DISTINCT CASE WHEN et.id IS NOT NULL AND et.created_at >= :today_start AND et.created_at <= :today_end THEN et.id END), 0) as today_withdrawal_count,
                 COALESCE(COUNT(DISTINCT CASE WHEN td.id IS NOT NULL THEN td.id END), 0) as coin_deposit_count,
                 COALESCE(COUNT(DISTINCT CASE WHEN pd.id IS NOT NULL THEN pd.id END), 0) as payment_deposit_count,
                 COALESCE(COUNT(DISTINCT CASE WHEN s.id IS NOT NULL THEN s.id END), 0) as swap_count,
@@ -69,11 +84,11 @@ public class AdminDashboardService extends BaseRepository {
                 COALESCE(COUNT(DISTINCT CASE WHEN mh.type = 'BROADCAST_WATCH' AND mh.created_at >= :start_date THEN mh.user_id END), 0) as realtime_listeners
             FROM users u
             LEFT JOIN mining_history mh ON mh.user_id = u.id AND mh.created_at >= :start_date AND mh.created_at <= :end_date
-            LEFT JOIN token_deposits td ON td.user_id = u.id AND td.created_at >= :start_date AND td.created_at <= :end_date
-            LEFT JOIN payment_deposits pd ON pd.user_id = u.id AND pd.created_at >= :start_date AND pd.created_at <= :end_date
+            LEFT JOIN token_deposits td ON td.user_id = u.id AND (td.created_at >= :start_date AND td.created_at <= :end_date OR td.created_at >= :today_start AND td.created_at <= :today_end)
+            LEFT JOIN payment_deposits pd ON pd.user_id = u.id AND (pd.created_at >= :start_date AND pd.created_at <= :end_date OR pd.created_at >= :today_start AND pd.created_at <= :today_end)
             LEFT JOIN swaps s ON s.user_id = u.id AND s.created_at >= :start_date AND s.created_at <= :end_date
-            LEFT JOIN exchanges e ON e.user_id = u.id AND e.created_at >= :start_date AND e.created_at <= :end_date
-            LEFT JOIN external_transfers et ON et.user_id = u.id AND et.created_at >= :start_date AND et.created_at <= :end_date
+            LEFT JOIN exchanges e ON e.user_id = u.id AND (e.created_at >= :start_date AND e.created_at <= :end_date OR e.created_at >= :today_start AND e.created_at <= :today_end)
+            LEFT JOIN external_transfers et ON et.user_id = u.id AND (et.created_at >= :start_date AND et.created_at <= :end_date OR et.created_at >= :today_start AND et.created_at <= :today_end)
             LEFT JOIN referral_relations rr ON rr.referred_id = u.id AND rr.created_at >= :start_date AND rr.created_at <= :end_date
             LEFT JOIN daily_mining dm ON dm.user_id = u.id AND dm.mining_date = CURRENT_DATE
             """;
@@ -81,6 +96,8 @@ public class AdminDashboardService extends BaseRepository {
         Map<String, Object> params = new HashMap<>();
         params.put("start_date", range.startDate);
         params.put("end_date", range.endDate);
+        params.put("today_start", todayStart);
+        params.put("today_end", todayEnd);
         
         return query(pool, sql, params)
             .map(rows -> {
@@ -92,6 +109,10 @@ public class AdminDashboardService extends BaseRepository {
                 return DashboardStatsDto.StatsDto.builder()
                     .totalIssuance(5000000000.0) // 고정값 또는 설정에서 가져오기
                     .totalMined(getDouble(row, "total_mined"))
+                    .todayDepositCount(getInteger(row, "today_deposit_count"))
+                    .todayPaymentCount(getInteger(row, "today_payment_count"))
+                    .todayExchangeCount(getInteger(row, "today_exchange_count"))
+                    .todayWithdrawalCount(getInteger(row, "today_withdrawal_count"))
                     .totalDeposit(getInteger(row, "coin_deposit_count"))
                     .totalPayment(getInteger(row, "payment_deposit_count"))
                     .totalExchange(getInteger(row, "exchange_count"))
@@ -180,6 +201,10 @@ public class AdminDashboardService extends BaseRepository {
         return DashboardStatsDto.StatsDto.builder()
             .totalIssuance(5000000000.0)
             .totalMined(0.0)
+            .todayDepositCount(0)
+            .todayPaymentCount(0)
+            .todayExchangeCount(0)
+            .todayWithdrawalCount(0)
             .totalDeposit(0)
             .totalPayment(0)
             .totalExchange(0)
@@ -229,6 +254,72 @@ public class AdminDashboardService extends BaseRepository {
             start.atStartOfDay(),
             end.atTime(23, 59, 59)
         );
+    }
+    
+    private Future<List<DashboardStatsDto.NotificationDto>> getNotifications() {
+        // 관리자용 알림 조회: INQUIRY, WITHDRAWAL, ANOMALY 타입
+        // notifications 테이블에서 관리자 승인/답변이 필요한 알림만 조회
+        // 실제 구현에서는 별도 관리자 알림 테이블이 있을 수 있지만, 여기서는 notifications 활용
+        String sql = """
+            SELECT 
+                n.id,
+                n.type,
+                n.title as category,
+                n.message as content,
+                n.created_at,
+                n.is_read
+            FROM notifications n
+            WHERE n.type IN ('INQUIRY', 'WITHDRAWAL', 'ANOMALY')
+            ORDER BY n.created_at DESC
+            LIMIT 50
+            """;
+        
+        return query(pool, sql, new HashMap<>())
+            .map(rows -> {
+                List<DashboardStatsDto.NotificationDto> notifications = new ArrayList<>();
+                for (var row : rows) {
+                    LocalDateTime createdAt = getLocalDateTime(row, "created_at");
+                    notifications.add(DashboardStatsDto.NotificationDto.builder()
+                        .id(getLong(row, "id"))
+                        .type(getString(row, "type"))
+                        .category(getString(row, "category"))
+                        .content(getString(row, "content"))
+                        .createdAt(createdAt != null ? createdAt.format(java.time.format.DateTimeFormatter.ISO_DATE_TIME) : null)
+                        .isRead(getBoolean(row, "is_read"))
+                        .build());
+                }
+                return notifications;
+            });
+    }
+    
+    private Future<List<DashboardStatsDto.TopReferrerDto>> getTopReferrers() {
+        // 팀원을 가장 많이 보유한 회원 순위 (referral_relations에서 팀원 수 계산)
+        String sql = """
+            SELECT 
+                u.id,
+                u.login_id as nickname,
+                COALESCE(COUNT(DISTINCT rr.referred_id), 0) as team_member_count,
+                ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT rr.referred_id) DESC) as rank
+            FROM users u
+            LEFT JOIN referral_relations rr ON rr.referrer_id = u.id AND rr.status = 'ACTIVE'
+            GROUP BY u.id, u.login_id
+            ORDER BY team_member_count DESC
+            LIMIT 10
+            """;
+        
+        return query(pool, sql, new HashMap<>())
+            .map(rows -> {
+                List<DashboardStatsDto.TopReferrerDto> topReferrers = new ArrayList<>();
+                int rank = 1;
+                for (var row : rows) {
+                    topReferrers.add(DashboardStatsDto.TopReferrerDto.builder()
+                        .rank(rank++)
+                        .nickname(getString(row, "nickname"))
+                        .teamMemberCount(getInteger(row, "team_member_count"))
+                        .build());
+                }
+                return topReferrers;
+            });
     }
     
     private record DateRange(LocalDateTime startDate, LocalDateTime endDate) {}

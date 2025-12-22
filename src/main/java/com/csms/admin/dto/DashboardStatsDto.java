@@ -11,12 +11,18 @@ public class DashboardStatsDto {
     private StatsDto stats;
     private List<ChartDataDto> chartData;
     private List<TopMemberDto> topMembers;
+    private List<NotificationDto> notifications;
+    private List<TopReferrerDto> topReferrers;
     
     @Data
     @Builder
     public static class StatsDto {
         private Double totalIssuance;
         private Double totalMined;
+        private Integer todayDepositCount;
+        private Integer todayPaymentCount;
+        private Integer todayExchangeCount;
+        private Integer todayWithdrawalCount;
         private Integer totalDeposit;
         private Integer totalPayment;
         private Integer totalExchange;
@@ -52,6 +58,25 @@ public class DashboardStatsDto {
         private Integer rank;
         private String nickname;
         private Double minedAmount;
+    }
+    
+    @Data
+    @Builder
+    public static class NotificationDto {
+        private Long id;
+        private String type; // INQUIRY, WITHDRAWAL, ANOMALY
+        private String category;
+        private String content;
+        private String createdAt; // ISO 8601 형식
+        private Boolean isRead;
+    }
+    
+    @Data
+    @Builder
+    public static class TopReferrerDto {
+        private Integer rank;
+        private String nickname;
+        private Integer teamMemberCount;
     }
 }
 
