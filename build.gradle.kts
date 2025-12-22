@@ -121,6 +121,18 @@ tasks.withType<Test> {
     useJUnitPlatform()
     testLogging {
         events("passed", "skipped", "failed")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+    // ANSI 색상 지원
+    outputs.upToDateWhen { false }
+}
+
+// 테스트 결과 색상 출력을 위한 설정
+tasks.named<Test>("test") {
+    doFirst {
+        // Windows에서도 ANSI 색상 지원
+        System.setProperty("org.gradle.console", "rich")
     }
 }
 
