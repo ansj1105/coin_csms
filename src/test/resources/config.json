@@ -22,6 +22,11 @@
       "port": 6379,
       "password": "",
       "maxPoolSize": 5
+    },
+    "flyway": {
+      "url": "jdbc:postgresql://localhost:5432/csms_test",
+      "user": "postgres",
+      "password": "postgres"
     }
   }
 }

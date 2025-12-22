@@ -19,6 +19,7 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxTestContext;
 import lombok.extern.slf4j.Slf4j;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,7 @@ public class HandlerTestBase {
     protected static WebClient webClient;
     protected static ObjectMapper objectMapper;
     protected static JWTAuth jwtAuth;
+    protected static Flyway flyway;
     
     protected final String apiUrl;
     
@@ -58,6 +60,7 @@ public class HandlerTestBase {
         }
         
         JsonObject jwtConfig = config.getJsonObject("jwt");
+        JsonObject flywayConfig = config.getJsonObject("flyway");
         
         // JWT Auth 설정
         jwtAuth = JWTAuth.create(vertx, new JWTAuthOptions()
@@ -66,6 +69,9 @@ public class HandlerTestBase {
                 .setBuffer(jwtConfig.getString("secret"))));
         
         testContext.verify(() -> {
+            // Flyway 설정
+            configureFlyway(flywayConfig);
+            
             // MainVerticle 배포 (test용 config.json과 test 환경 지정)
             vertx.deployVerticle(
                 new MainVerticle("src/test/resources/config.json", "test"),
@@ -77,8 +83,12 @@ public class HandlerTestBase {
     @BeforeEach
     protected void init(Vertx vertx, VertxTestContext testContext) {
         testContext.verify(() -> {
-            // 테스트 전 초기화 작업이 필요하면 여기에 추가
-            testContext.completeNow();
+            try {
+                migration();
+                testContext.completeNow();
+            } catch (Exception e) {
+                testContext.failNow(e);
+            }
         });
     }
     
@@ -183,6 +193,33 @@ public class HandlerTestBase {
      */
     protected void expectError(HttpResponse<Buffer> res, int expectedStatusCode) {
         assertEquals(expectedStatusCode, res.statusCode());
+    }
+    
+    /**
+     * Flyway 설정
+     */
+    private static void configureFlyway(JsonObject flywayConfig) {
+        String jdbcUrl = flywayConfig.getString("url");
+        String user = flywayConfig.getString("user");
+        String password = flywayConfig.getString("password");
+        
+        flyway = Flyway.configure()
+            .dataSource(jdbcUrl, user, password)
+            .locations(
+                "filesystem:src/main/resources/db/migration",
+                "filesystem:src/test/resources/db/migration"
+            )
+            .cleanDisabled(false)
+            .load();
+    }
+    
+    /**
+     * Flyway 마이그레이션 실행 (테스트마다 DB 초기화)
+     */
+    private void migration() {
+        log.debug("TEST migration - clean and migrate");
+        flyway.clean();  // 테스트마다 DB 초기화
+        flyway.migrate();
     }
 }
 
