@@ -119,6 +119,71 @@ public class ApiVerticle extends AbstractVerticle {
                     .put("status", "UP")
                     .put("timestamp", System.currentTimeMillis())));
         });
+        
+        // Swagger UI
+        router.get("/api-docs").handler(ctx -> {
+            ctx.response()
+                .putHeader("Content-Type", "text/html; charset=utf-8")
+                .end(getSwaggerHtml());
+        });
+        
+        // OpenAPI Spec
+        router.get("/openapi.yaml").handler(ctx -> {
+            vertx.fileSystem().readFile("openapi.yaml")
+                .recover(err -> vertx.fileSystem().readFile("src/main/resources/openapi.yaml"))
+                .onSuccess(buffer -> {
+                    ctx.response()
+                        .putHeader("Content-Type", "application/x-yaml; charset=utf-8")
+                        .end(buffer);
+                })
+                .onFailure(err -> {
+                    log.error("Failed to load openapi.yaml", err);
+                    ctx.response()
+                        .setStatusCode(404)
+                        .end("OpenAPI spec not found");
+                });
+        });
+    }
+    
+    private String getSwaggerHtml() {
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>CSMS API Documentation</title>
+                <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui.css">
+                <style>
+                    html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+                    *, *:before, *:after { box-sizing: inherit; }
+                    body { margin:0; padding:0; background: #fafafa; }
+                </style>
+            </head>
+            <body>
+                <div id="swagger-ui"></div>
+                <script src="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui-bundle.js"></script>
+                <script src="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui-standalone-preset.js"></script>
+                <script>
+                window.onload = function() {
+                    window.ui = SwaggerUIBundle({
+                        url: "/openapi.yaml",
+                        dom_id: '#swagger-ui',
+                        deepLinking: true,
+                        presets: [
+                            SwaggerUIBundle.presets.apis,
+                            SwaggerUIStandalonePreset
+                        ],
+                        plugins: [
+                            SwaggerUIBundle.plugins.DownloadUrl
+                        ],
+                        layout: "StandaloneLayout",
+                        validatorUrl: null
+                    });
+                };
+                </script>
+            </body>
+            </html>
+            """;
     }
     
     /**
