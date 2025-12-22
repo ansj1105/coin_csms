@@ -10,6 +10,7 @@ import io.vertx.sqlclient.templates.SqlTemplate;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,14 @@ public abstract class BaseRepository {
     
     protected LocalDateTime getLocalDateTime(Row row, String column) {
         return hasColumn(row, column) ? row.getLocalDateTime(column) : null;
+    }
+    
+    protected LocalDate getLocalDate(Row row, String column) {
+        if (!hasColumn(row, column)) {
+            return null;
+        }
+        LocalDateTime dateTime = row.getLocalDateTime(column);
+        return dateTime != null ? dateTime.toLocalDate() : null;
     }
     
     protected JsonObject getJsonObject(Row row, String column) {

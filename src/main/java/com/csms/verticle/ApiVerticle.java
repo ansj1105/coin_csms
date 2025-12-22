@@ -303,6 +303,16 @@ public class ApiVerticle extends AbstractVerticle {
         );
         mainRouter.mountSubRouter("/api/v1/admin", adminDashboardHandler.getRouter());
         
+        // Admin Member 도메인
+        com.csms.admin.service.AdminMemberService adminMemberService = new com.csms.admin.service.AdminMemberService(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.handler.AdminMemberHandler adminMemberHandler = new com.csms.admin.handler.AdminMemberHandler(
+            vertx,
+            adminMemberService
+        );
+        mainRouter.mountSubRouter("/api/v1/admin/members", adminMemberHandler.getRouter());
+        
         // Currency 도메인
         com.csms.currency.repository.CurrencyRepository currencyRepository = new com.csms.currency.repository.CurrencyRepository();
         com.csms.currency.service.CurrencyService currencyService = new com.csms.currency.service.CurrencyService(
