@@ -151,9 +151,10 @@ public class AdminMemberRepository extends BaseRepository {
         return query(pool, countSql, params)
             .compose(countRows -> {
                 Long total = 0L;
-                if (!countRows.isEmpty()) {
+                if (countRows.size() > 0) {
                     total = getLong(countRows.iterator().next(), "total");
                 }
+                final Long finalTotal = total != null ? total : 0L;
                 
                 // 실제 데이터 조회
                 return query(pool, sql.toString(), params)
@@ -179,7 +180,7 @@ public class AdminMemberRepository extends BaseRepository {
                         }
                         return MemberListDto.builder()
                             .members(members)
-                            .total(total)
+                            .total(finalTotal)
                             .limit(limit)
                             .offset(offset)
                             .build();
@@ -243,7 +244,7 @@ public class AdminMemberRepository extends BaseRepository {
         
         return query(pool, sql, params)
             .compose(rows -> {
-                if (rows.isEmpty()) {
+                if (rows.size() == 0) {
                     return Future.failedFuture(new com.csms.common.exceptions.NotFoundException("Member not found"));
                 }
                 
@@ -493,9 +494,10 @@ public class AdminMemberRepository extends BaseRepository {
         return query(pool, countSql, params)
             .compose(countRows -> {
                 Long total = 0L;
-                if (!countRows.isEmpty()) {
+                if (countRows.size() > 0) {
                     total = getLong(countRows.iterator().next(), "total");
                 }
+                final Long finalTotal = total != null ? total : 0L;
                 
                 // 실제 데이터 조회
                 return query(pool, sql.toString(), params)
@@ -512,7 +514,7 @@ public class AdminMemberRepository extends BaseRepository {
                         }
                         return com.csms.admin.dto.WalletListDto.builder()
                             .wallets(wallets)
-                            .total(total)
+                            .total(finalTotal)
                             .limit(limit)
                             .offset(offset)
                             .build();

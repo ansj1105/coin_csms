@@ -89,5 +89,17 @@ public abstract class BaseHandler {
     protected ObjectMapper getObjectMapper() {
         return JsonUtils.getObjectMapper();
     }
+    
+    protected Integer getQueryParamAsInteger(RoutingContext ctx, String param, Integer defaultValue) {
+        String value = ctx.queryParams().get(param);
+        if (value == null || value.isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
 }
 

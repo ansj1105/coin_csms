@@ -664,6 +664,348 @@ paths:
         '401':
           description: 인증 필요
 
+  /admin/members/{userId}/mining-history:
+    get:
+      tags:
+        - Admin
+      summary: 채굴 내역 상세정보 조회
+      description: 특정 유저의 채굴 내역 상세정보를 조회합니다.
+      operationId: getMiningHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: 회원 ID
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          description: 페이지당 항목 수
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: 시작 위치
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [ALL, TODAY, 7, 14, 30, 365]
+            default: ALL
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                status: OK
+                message: 요청이 완료되었습니다.
+                data:
+                  userId: 452345
+                  userNickname: MONEY
+                  userLevel: 1
+                  records:
+                    - id: 1
+                      year: 2025
+                      date: "2025-10-10"
+                      time: "14:10"
+                      level: 1
+                      miningType: BROADCAST_PROGRESS
+                      miningEfficiency: 154
+                      invitationCode: KDJKWAFG
+                      teamMemberCount: 1000
+                      miningAmount: 10.0
+                      referralRevenue: 100.0
+                      totalMinedHoldings: 200000.0
+                      deviceInfo: "iOS / 192.168.0.1"
+                  total: 100
+                  limit: 20
+                  offset: 0
+                  summary:
+                    totalMiningAmount: 1000.0
+                    totalReferralRevenue: 10000.0
+                    totalMinedHoldings: 11000.0
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 회원을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/members/{userId}/mining-history/export:
+    get:
+      tags:
+        - Admin
+      summary: 채굴 내역 상세정보 엑셀 다운로드
+      description: 특정 유저의 채굴 내역 상세정보를 엑셀 파일로 다운로드합니다.
+      operationId: exportMiningHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: 회원 ID
+          schema:
+            type: integer
+            format: int64
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [ALL, TODAY, 7, 14, 30, 365]
+            default: ALL
+      responses:
+        '200':
+          description: 다운로드 성공
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 회원을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/mining/conditions:
+    get:
+      tags:
+        - Admin
+      summary: 채굴 조건 설정 조회
+      description: 채굴 조건 설정을 조회합니다.
+      operationId: getMiningConditions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                status: OK
+                message: 요청이 완료되었습니다.
+                data:
+                  basicConditions:
+                    isEnabled: true
+                    baseTimeEnabled: false
+                    baseTimeMinutes: 30
+                    missions:
+                      - type: RANDOM_CALL
+                        name: 랜덤통화
+                        requiredCount: 2
+                        isEnabled: true
+                        hasInput: true
+                      - type: LIVE_AD
+                        name: 라이브내 광고시청
+                        requiredCount: 1
+                        isEnabled: true
+                        hasInput: true
+                  progressSettings:
+                    broadcastProgress:
+                      isEnabled: true
+                      timePerHour: 15
+                      coinsPerHour: 0.002
+                    broadcastListening:
+                      isEnabled: true
+                      timePerHour: 15
+                      coinsPerHour: 0.002
+                  levelLimits:
+                    - level: 1
+                      dailyLimit: 0.002
+                    - level: 2
+                      dailyLimit: 0.002
+                  levelLimitsEnabled: true
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/mining/conditions/basic:
+    patch:
+      tags:
+        - Admin
+      summary: 채굴 기본조건 업데이트
+      description: 채굴 기본조건을 업데이트합니다.
+      operationId: updateBasicConditions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBasicConditionRequest'
+      responses:
+        '200':
+          description: 업데이트 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/mining/conditions/progress:
+    patch:
+      tags:
+        - Admin
+      summary: 채굴 진행 설정 업데이트
+      description: 채굴 진행 설정을 업데이트합니다.
+      operationId: updateProgressSetting
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProgressSettingRequest'
+      responses:
+        '200':
+          description: 업데이트 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/mining/conditions/level-limit:
+    patch:
+      tags:
+        - Admin
+      summary: 레벨별 일일 한도 업데이트
+      description: 레벨별 일일 한도를 업데이트합니다.
+      operationId: updateLevelLimit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLevelLimitRequest'
+      responses:
+        '200':
+          description: 업데이트 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/mining/conditions/level-limits-enabled:
+    patch:
+      tags:
+        - Admin
+      summary: 레벨별 일일 한도 전체 활성화/비활성화
+      description: 레벨별 일일 한도 전체를 활성화 또는 비활성화합니다.
+      operationId: updateLevelLimitsEnabled
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLevelLimitsEnabledRequest'
+      responses:
+        '200':
+          description: 업데이트 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /users/register:
     post:
       tags:
@@ -1394,4 +1736,296 @@ components:
         activityStatus:
           type: string
           example: ACTIVE
+
+    MiningHistoryDetailResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/MiningHistoryDetail'
+
+    MiningHistoryDetail:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          example: 452345
+        userNickname:
+          type: string
+          example: MONEY
+        userLevel:
+          type: integer
+          example: 1
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/MiningHistoryRecord'
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+        summary:
+          $ref: '#/components/schemas/MiningHistorySummary'
+
+    MiningHistoryRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        year:
+          type: integer
+          example: 2025
+        date:
+          type: string
+          format: date
+          example: "2025-10-10"
+        time:
+          type: string
+          example: "14:10"
+        level:
+          type: integer
+          example: 1
+        miningType:
+          type: string
+          enum: [BROADCAST_PROGRESS, BROADCAST_LISTENING]
+          example: BROADCAST_PROGRESS
+        miningEfficiency:
+          type: integer
+          example: 154
+        invitationCode:
+          type: string
+          example: KDJKWAFG
+        teamMemberCount:
+          type: integer
+          example: 1000
+        miningAmount:
+          type: number
+          format: double
+          example: 10.0
+        referralRevenue:
+          type: number
+          format: double
+          example: 100.0
+        totalMinedHoldings:
+          type: number
+          format: double
+          example: 200000.0
+        deviceInfo:
+          type: string
+          example: "iOS / 192.168.0.1"
+
+    MiningHistorySummary:
+      type: object
+      properties:
+        totalMiningAmount:
+          type: number
+          format: double
+          example: 1000.0
+        totalReferralRevenue:
+          type: number
+          format: double
+          example: 10000.0
+        totalMinedHoldings:
+          type: number
+          format: double
+          example: 11000.0
+
+    MiningConditionResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/MiningCondition'
+
+    MiningCondition:
+      type: object
+      properties:
+        basicConditions:
+          $ref: '#/components/schemas/BasicConditions'
+        progressSettings:
+          $ref: '#/components/schemas/ProgressSettings'
+        levelLimits:
+          type: array
+          items:
+            $ref: '#/components/schemas/LevelLimit'
+        levelLimitsEnabled:
+          type: boolean
+          example: true
+
+    BasicConditions:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+          example: true
+        baseTimeEnabled:
+          type: boolean
+          example: false
+        baseTimeMinutes:
+          type: integer
+          example: 30
+        missions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mission'
+
+    Mission:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [RANDOM_CALL, LIVE_AD, COMMUNITY_POST, DAILY_CHECKIN]
+          example: RANDOM_CALL
+        name:
+          type: string
+          example: 랜덤통화
+        requiredCount:
+          type: integer
+          example: 2
+        isEnabled:
+          type: boolean
+          example: true
+        hasInput:
+          type: boolean
+          example: true
+
+    ProgressSettings:
+      type: object
+      properties:
+        broadcastProgress:
+          $ref: '#/components/schemas/BroadcastSetting'
+        broadcastListening:
+          $ref: '#/components/schemas/BroadcastSetting'
+
+    BroadcastSetting:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+          example: true
+        timePerHour:
+          type: integer
+          example: 15
+        coinsPerHour:
+          type: number
+          format: double
+          example: 0.002
+
+    LevelLimit:
+      type: object
+      properties:
+        level:
+          type: integer
+          example: 1
+        dailyLimit:
+          type: number
+          format: double
+          example: 0.002
+
+    UpdateBasicConditionRequest:
+      type: object
+      required:
+        - isEnabled
+      properties:
+        isEnabled:
+          type: boolean
+          example: true
+        baseTimeEnabled:
+          type: boolean
+          example: false
+        baseTimeMinutes:
+          type: integer
+          example: 30
+        missions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MissionUpdate'
+
+    MissionUpdate:
+      type: object
+      required:
+        - type
+        - requiredCount
+        - isEnabled
+      properties:
+        type:
+          type: string
+          enum: [RANDOM_CALL, LIVE_AD, COMMUNITY_POST, DAILY_CHECKIN]
+          example: RANDOM_CALL
+        requiredCount:
+          type: integer
+          example: 2
+        isEnabled:
+          type: boolean
+          example: true
+
+    UpdateProgressSettingRequest:
+      type: object
+      properties:
+        broadcastProgress:
+          $ref: '#/components/schemas/BroadcastSettingUpdate'
+        broadcastListening:
+          $ref: '#/components/schemas/BroadcastSettingUpdate'
+
+    BroadcastSettingUpdate:
+      type: object
+      required:
+        - isEnabled
+        - timePerHour
+        - coinsPerHour
+      properties:
+        isEnabled:
+          type: boolean
+          example: true
+        timePerHour:
+          type: integer
+          example: 15
+        coinsPerHour:
+          type: number
+          format: double
+          example: 0.002
+
+    UpdateLevelLimitRequest:
+      type: object
+      required:
+        - level
+        - dailyLimit
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 9
+          example: 1
+        dailyLimit:
+          type: number
+          format: double
+          minimum: 0
+          example: 0.002
+
+    UpdateLevelLimitsEnabledRequest:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+          example: true
 

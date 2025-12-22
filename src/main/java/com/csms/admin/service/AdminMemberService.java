@@ -46,7 +46,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
     }
     
     public Future<Void> updateSanctionStatus(Long memberId, SanctionRequestDto request) {
-        String sanctionStatus = request.getSanctionStatus();
+        final String requestSanctionStatus = request.getSanctionStatus();
         
         // 현재 제재 상태 조회
         return repository.getMemberDetail(memberId)
@@ -54,14 +54,15 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
                 String currentSanction = member.getSanctionStatus();
                 
                 // 현재 제재 상태와 동일하면 해제 (null)
-                if (sanctionStatus != null && sanctionStatus.equals(currentSanction)) {
-                    sanctionStatus = null;
+                String finalSanctionStatus;
+                if (requestSanctionStatus != null && requestSanctionStatus.equals(currentSanction)) {
+                    finalSanctionStatus = null;
+                } else {
+                    // null이면 빈 문자열로 변환 (DB에서 null로 저장)
+                    finalSanctionStatus = (requestSanctionStatus == null || requestSanctionStatus.trim().isEmpty()) 
+                        ? null 
+                        : requestSanctionStatus;
                 }
-                
-                // null이면 빈 문자열로 변환 (DB에서 null로 저장)
-                String finalSanctionStatus = (sanctionStatus == null || sanctionStatus.trim().isEmpty()) 
-                    ? null 
-                    : sanctionStatus;
                 
                 return repository.updateSanctionStatus(memberId, finalSanctionStatus);
             });

@@ -317,6 +317,24 @@ public class ApiVerticle extends AbstractVerticle {
         );
         mainRouter.mountSubRouter("/api/v1/admin/members", adminMemberHandler.getRouter());
         
+        // Admin Mining History 도메인 (회원별 채굴 내역)
+        com.csms.admin.repository.AdminMiningHistoryRepository adminMiningHistoryRepository = new com.csms.admin.repository.AdminMiningHistoryRepository(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.service.AdminMiningHistoryService adminMiningHistoryService = new com.csms.admin.service.AdminMiningHistoryService(
+            serviceFactory.getPool(),
+            adminMiningHistoryRepository
+        );
+        com.csms.admin.service.AdminMiningHistoryExportService adminMiningHistoryExportService = new com.csms.admin.service.AdminMiningHistoryExportService(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.handler.AdminMiningHistoryHandler adminMiningHistoryHandler = new com.csms.admin.handler.AdminMiningHistoryHandler(
+            vertx,
+            adminMiningHistoryService,
+            adminMiningHistoryExportService
+        );
+        mainRouter.mountSubRouter("/api/v1/admin/members", adminMiningHistoryHandler.getRouter());
+        
         // Admin Mining 도메인
         com.csms.admin.repository.AdminMiningRepository adminMiningRepository = new com.csms.admin.repository.AdminMiningRepository(
             serviceFactory.getPool()
@@ -334,6 +352,20 @@ public class ApiVerticle extends AbstractVerticle {
             adminMiningExportService
         );
         mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningHandler.getRouter());
+        
+        // Admin Mining Condition 도메인
+        com.csms.admin.repository.AdminMiningConditionRepository adminMiningConditionRepository = new com.csms.admin.repository.AdminMiningConditionRepository(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.service.AdminMiningConditionService adminMiningConditionService = new com.csms.admin.service.AdminMiningConditionService(
+            serviceFactory.getPool(),
+            adminMiningConditionRepository
+        );
+        com.csms.admin.handler.AdminMiningConditionHandler adminMiningConditionHandler = new com.csms.admin.handler.AdminMiningConditionHandler(
+            vertx,
+            adminMiningConditionService
+        );
+        mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningConditionHandler.getRouter());
         
         // Currency 도메인
         com.csms.currency.repository.CurrencyRepository currencyRepository = new com.csms.currency.repository.CurrencyRepository();

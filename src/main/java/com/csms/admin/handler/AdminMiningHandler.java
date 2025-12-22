@@ -58,10 +58,12 @@ public class AdminMiningHandler extends BaseHandler {
             ).onSuccess(result -> {
                 success(ctx, result);
             }).onFailure(throwable -> {
-                ErrorHandler.handleError(ctx, throwable);
+                ctx.fail(throwable);
+                ErrorHandler.handle(ctx);
             });
         } catch (Exception e) {
-            ErrorHandler.handleError(ctx, e);
+            ctx.fail(e);
+            ErrorHandler.handle(ctx);
         }
     }
     
@@ -91,10 +93,12 @@ public class AdminMiningHandler extends BaseHandler {
                     .putHeader("Content-Length", String.valueOf(buffer.length()))
                     .end(buffer);
             }).onFailure(throwable -> {
-                ErrorHandler.handleError(ctx, throwable);
+                ctx.fail(throwable);
+                ErrorHandler.handle(ctx);
             });
         } catch (Exception e) {
-            ErrorHandler.handleError(ctx, e);
+            ctx.fail(e);
+            ErrorHandler.handle(ctx);
         }
     }
 }

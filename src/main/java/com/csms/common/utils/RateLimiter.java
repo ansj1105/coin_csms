@@ -61,7 +61,7 @@ public class RateLimiter {
                 int attempts = response.toInteger();
                 
                 // 실패 횟수 설정 (30분 TTL)
-                redisApi.expire(failKey, String.valueOf(BLOCK_DURATION_SECONDS));
+                redisApi.expire(List.of(failKey, String.valueOf(BLOCK_DURATION_SECONDS)));
                 
                 // 5회 실패 시 차단
                 if (attempts >= MAX_LOGIN_ATTEMPTS) {
