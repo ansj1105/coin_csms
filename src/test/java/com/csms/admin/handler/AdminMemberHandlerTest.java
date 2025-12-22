@@ -49,15 +49,6 @@ class AdminMemberHandlerTest {
     
     @Test
     void testUpdateMember_Success(VertxTestContext context) {
-        // Given
-        UpdateMemberRequestDto request = UpdateMemberRequestDto.builder()
-            .phone("010-1234-5678")
-            .email("newemail@example.com")
-            .level(5)
-            .build();
-        
-        when(service.updateMember(any(), any())).thenReturn(Future.succeededFuture());
-        
         // When
         Router router = handler.getRouter();
         
@@ -68,9 +59,6 @@ class AdminMemberHandlerTest {
     
     @Test
     void testResetTransactionPassword_Success(VertxTestContext context) {
-        // Given
-        when(service.resetTransactionPassword(any())).thenReturn(Future.succeededFuture());
-        
         // When
         Router router = handler.getRouter();
         
@@ -81,15 +69,6 @@ class AdminMemberHandlerTest {
     
     @Test
     void testAdjustCoin_Success(VertxTestContext context) {
-        // Given
-        CoinAdjustRequestDto request = CoinAdjustRequestDto.builder()
-            .userId(1L)
-            .amount(1000.0)
-            .type("ADD")
-            .build();
-        
-        when(service.adjustCoin(any())).thenReturn(Future.succeededFuture());
-        
         // When
         Router router = handler.getRouter();
         
@@ -100,15 +79,6 @@ class AdminMemberHandlerTest {
     
     @Test
     void testAdjustKoriPoint_Success(VertxTestContext context) {
-        // Given
-        KoriPointAdjustRequestDto request = KoriPointAdjustRequestDto.builder()
-            .userId(1L)
-            .amount(1000.0)
-            .type("ADD")
-            .build();
-        
-        when(service.adjustKoriPoint(any())).thenReturn(Future.succeededFuture());
-        
         // When
         Router router = handler.getRouter();
         
@@ -119,16 +89,6 @@ class AdminMemberHandlerTest {
     
     @Test
     void testGetMemberWallets_Success(VertxTestContext context) {
-        // Given
-        WalletListDto walletList = WalletListDto.builder()
-            .wallets(java.util.List.of())
-            .total(0L)
-            .limit(20)
-            .offset(0)
-            .build();
-        
-        when(service.getMemberWallets(any(), any(), any(), any(), any())).thenReturn(Future.succeededFuture(walletList));
-        
         // When
         Router router = handler.getRouter();
         

@@ -1,0 +1,28 @@
+{
+  "test": {
+    "http": {
+      "port": 8089
+    },
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "csms_test",
+      "user": "postgres",
+      "password": "postgres",
+      "pool_size": 5
+    },
+    "jwt": {
+      "secret": "test-jwt-secret-key-for-testing-only-do-not-use-in-production",
+      "access_token_expire_minutes": 30,
+      "refresh_token_expire_minutes": 14400
+    },
+    "redis": {
+      "mode": "standalone",
+      "host": "localhost",
+      "port": 6379,
+      "password": "",
+      "maxPoolSize": 5
+    }
+  }
+}
+

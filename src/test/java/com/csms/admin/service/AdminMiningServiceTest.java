@@ -52,7 +52,7 @@ class AdminMiningServiceTest {
         )).thenReturn(Future.succeededFuture(expectedResult));
         
         // When
-        service.getMiningRecords(null, null, null, null, null, null, null)
+        service.getMiningRecords(null, null, null, null, null, null, null, null)
             .onComplete(context.succeeding(result -> {
                 // Then
                 context.verify(() -> {

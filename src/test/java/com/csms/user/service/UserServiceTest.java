@@ -94,7 +94,7 @@ class UserServiceTest {
             .build();
         
         when(userRepository.getUserByLoginId(any(), eq("testuser"))).thenReturn(Future.succeededFuture(user));
-        when(jwtAuth.generateToken(any(), any())).thenReturn("test-token");
+        when(jwtAuth.generateToken(any(JsonObject.class), any())).thenReturn("test-token");
         
         // When
         userService.login(dto)

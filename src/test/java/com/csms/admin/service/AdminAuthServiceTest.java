@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({VertxExtension.class, MockitoExtension.class})
@@ -70,7 +71,9 @@ class AdminAuthServiceTest {
         
         when(rateLimiter.checkAdminLoginAttempt(any())).thenReturn(Future.succeededFuture(true));
         when(adminRepository.getAdminByLoginId(any(), eq("admin1"))).thenReturn(Future.succeededFuture(admin));
-        when(jwtAuth.generateToken(any(), any())).thenReturn("test-token");
+        when(jwtAuth.generateToken(any(JsonObject.class), any())).thenReturn("test-token");
+        // resetAdminLoginFailure는 void 메서드이므로 doNothing 사용
+        doNothing().when(rateLimiter).resetAdminLoginFailure(any());
         
         // When
         adminAuthService.login(dto, "127.0.0.1")

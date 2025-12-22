@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <!-- 콘솔 출력 (색상 및 indent 지원) -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout>
+                <Pattern>%d{HH:mm:ss.SSS} %highlight{%-5level}{ERROR=red bold, WARN=yellow bold, INFO=cyan, DEBUG=green dim, TRACE=blue dim} %style{[%t]}{bright,cyan} %style{%logger{40}}{bright,blue} %style{%msg}{normal}%n%ex{full}</Pattern>
+            </PatternLayout>
+        </Console>
+        
+        <!-- 파일 출력 (색상 없음, indent 포함) -->
+        <RollingFile name="FileAppender" fileName="logs/csms.log"
+                     filePattern="logs/csms-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %msg%n%ex{full}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+    </Appenders>
+    
+    <Loggers>
+        <!-- 프로젝트 로거 -->
+        <Logger name="com.csms" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+        </Logger>
+        
+        <!-- Vert.x 로거 -->
+        <Logger name="io.vertx" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+        </Logger>
+        
+        <!-- SQL 로거 -->
+        <Logger name="com.csms.common.repository" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+        </Logger>
+        
+        <!-- 루트 로거 -->
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+        </Root>
+    </Loggers>
+</Configuration>
+
