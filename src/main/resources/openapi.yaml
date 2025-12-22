@@ -809,6 +809,172 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /admin/mining/history:
+    get:
+      tags:
+        - Admin
+      summary: 채굴 내역 목록 조회
+      description: 채굴 내역 목록을 검색, 정렬, 필터링, 페이지네이션하여 조회합니다.
+      operationId: getMiningHistoryList
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: 페이지당 항목 수
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: 시작 위치
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ID, REFERRER, NICKNAME, LEVEL, INVITATION_CODE]
+            default: ALL
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: sortType
+          in: query
+          description: 정렬 타입 (내림차순)
+          required: false
+          schema:
+            type: string
+            enum: [LEVEL, TEAM_MEMBER_COUNT]
+        - name: activityStatus
+          in: query
+          description: 활동상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ACTIVE, INACTIVE]
+            default: ALL
+        - name: sanctionStatus
+          in: query
+          description: 제재상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, WARNING, MINING_SUSPENDED, ACCOUNT_BLOCKED]
+            default: ALL
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                status: OK
+                message: 요청이 완료되었습니다.
+                data:
+                  items:
+                    - id: 452345
+                      referrerNickname: DWAJFA
+                      nickname: MONEY
+                      miningEfficiency: 154
+                      level: 1
+                      invitationCode: KDJKWAFG
+                      teamMemberCount: 1000
+                      totalMiningAmount: 100.0
+                      referralRevenue: 100.0
+                      totalMinedHoldings: 200000.0
+                      activityStatus: ACTIVE
+                      sanctionStatus: NONE
+                  total: 100
+                  limit: 20
+                  offset: 0
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/mining/history/export:
+    get:
+      tags:
+        - Admin
+      summary: 채굴 내역 목록 엑셀 다운로드
+      description: 채굴 내역 목록을 엑셀 파일로 다운로드합니다.
+      operationId: exportMiningHistoryList
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ID, REFERRER, NICKNAME, LEVEL, INVITATION_CODE]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: sortType
+          in: query
+          description: 정렬 타입 (내림차순)
+          required: false
+          schema:
+            type: string
+            enum: [LEVEL, TEAM_MEMBER_COUNT]
+        - name: activityStatus
+          in: query
+          description: 활동상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ACTIVE, INACTIVE]
+        - name: sanctionStatus
+          in: query
+          description: 제재상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, WARNING, MINING_SUSPENDED, ACCOUNT_BLOCKED]
+      responses:
+        '200':
+          description: 다운로드 성공
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /admin/mining/conditions:
     get:
       tags:
@@ -2028,4 +2194,78 @@ components:
         enabled:
           type: boolean
           example: true
+
+    MiningHistoryListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/MiningHistoryList'
+
+    MiningHistoryList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MiningHistoryItem'
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+
+    MiningHistoryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 452345
+        referrerNickname:
+          type: string
+          nullable: true
+          example: DWAJFA
+        nickname:
+          type: string
+          example: MONEY
+        miningEfficiency:
+          type: integer
+          example: 154
+        level:
+          type: integer
+          example: 1
+        invitationCode:
+          type: string
+          example: KDJKWAFG
+        teamMemberCount:
+          type: integer
+          example: 1000
+        totalMiningAmount:
+          type: number
+          format: double
+          example: 100.0
+        referralRevenue:
+          type: number
+          format: double
+          example: 100.0
+        totalMinedHoldings:
+          type: number
+          format: double
+          example: 200000.0
+        activityStatus:
+          type: string
+          example: ACTIVE
+        sanctionStatus:
+          type: string
+          example: NONE
 

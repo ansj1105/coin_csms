@@ -367,6 +367,24 @@ public class ApiVerticle extends AbstractVerticle {
         );
         mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningConditionHandler.getRouter());
         
+        // Admin Mining History List 도메인 (채굴 내역 목록)
+        com.csms.admin.repository.AdminMiningHistoryListRepository adminMiningHistoryListRepository = new com.csms.admin.repository.AdminMiningHistoryListRepository(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.service.AdminMiningHistoryListService adminMiningHistoryListService = new com.csms.admin.service.AdminMiningHistoryListService(
+            serviceFactory.getPool(),
+            adminMiningHistoryListRepository
+        );
+        com.csms.admin.service.AdminMiningHistoryListExportService adminMiningHistoryListExportService = new com.csms.admin.service.AdminMiningHistoryListExportService(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.handler.AdminMiningHistoryListHandler adminMiningHistoryListHandler = new com.csms.admin.handler.AdminMiningHistoryListHandler(
+            vertx,
+            adminMiningHistoryListService,
+            adminMiningHistoryListExportService
+        );
+        mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningHistoryListHandler.getRouter());
+        
         // Currency 도메인
         com.csms.currency.repository.CurrencyRepository currencyRepository = new com.csms.currency.repository.CurrencyRepository();
         com.csms.currency.service.CurrencyService currencyService = new com.csms.currency.service.CurrencyService(

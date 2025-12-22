@@ -7,6 +7,9 @@ import io.vertx.core.Future;
 import io.vertx.pgclient.PgPool;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Slf4j
 public class AdminMiningConditionService extends BaseService {
     
@@ -30,7 +33,7 @@ public class AdminMiningConditionService extends BaseService {
         ).compose(v -> {
             // 미션 업데이트
             if (request.getMissions() != null) {
-                List<Future<Void>> missionFutures = new java.util.ArrayList<>();
+                List<Future<Void>> missionFutures = new ArrayList<>();
                 for (UpdateBasicConditionRequestDto.MissionUpdate mission : request.getMissions()) {
                     missionFutures.add(repository.updateMission(
                         mission.getType(),
@@ -45,7 +48,7 @@ public class AdminMiningConditionService extends BaseService {
     }
     
     public Future<Void> updateProgressSetting(UpdateProgressSettingRequestDto request) {
-        List<Future<Void>> futures = new java.util.ArrayList<>();
+        List<Future<Void>> futures = new ArrayList<>();
         
         if (request.getBroadcastProgress() != null) {
             futures.add(repository.updateProgressSetting(
