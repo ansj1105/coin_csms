@@ -1,6 +1,13 @@
 -- 테스트용 더미 데이터 삽입
 -- 이 파일은 테스트 환경에서 사용되는 더미 데이터입니다.
 
+-- 테스트용 Admin 사용자 생성 (비밀번호: password123)
+-- BCrypt 해시: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+INSERT INTO users (login_id, password_hash, role, status, created_at, updated_at)
+VALUES 
+    ('admin1', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 2, 'ACTIVE', NOW(), NOW())
+ON CONFLICT (login_id) DO NOTHING;
+
 -- 테스트용 사용자 생성 (비밀번호: test1234)
 -- BCrypt 해시: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
 INSERT INTO users (login_id, password_hash, nickname, email, status, level, referral_code, created_at, updated_at)

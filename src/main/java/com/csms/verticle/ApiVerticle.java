@@ -1,20 +1,37 @@
 package com.csms.verticle;
 
+import com.csms.admin.handler.*;
+import com.csms.admin.repository.*;
+import com.csms.admin.service.*;
 import com.csms.common.utils.ErrorHandler;
+import com.csms.common.utils.RateLimiter;
 import com.csms.core.factory.DefaultServiceFactory;
 import com.csms.core.factory.ServiceFactory;
+import com.csms.currency.handler.CurrencyHandler;
+import com.csms.currency.repository.CurrencyRepository;
+import com.csms.currency.service.CurrencyService;
+import com.csms.user.handler.UserHandler;
+import com.csms.user.repository.UserRepository;
+import com.csms.user.service.UserService;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
+import io.vertx.redis.client.Redis;
+import io.vertx.redis.client.RedisAPI;
+import io.vertx.redis.client.RedisClientType;
+import io.vertx.redis.client.RedisOptions;
+import io.vertx.redis.client.RedisRole;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -34,7 +51,7 @@ public class ApiVerticle extends AbstractVerticle {
     }
     
     private ServiceFactory serviceFactory;
-    private io.vertx.redis.client.RedisAPI redisApi;
+    private RedisAPI redisApi;
     
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
@@ -189,11 +206,11 @@ public class ApiVerticle extends AbstractVerticle {
     /**
      * Redis 연결
      */
-    private io.vertx.core.Future<Void> connectRedis(JsonObject config) {
+    private Future<Void> connectRedis(JsonObject config) {
         JsonObject redisConfig = config.getJsonObject("redis", new JsonObject());
         String mode = redisConfig.getString("mode", "standalone");
         
-        io.vertx.redis.client.RedisOptions options = new io.vertx.redis.client.RedisOptions();
+        RedisOptions options = new RedisOptions();
         
         String password = redisConfig.getString("password");
         if (password != null && !password.isEmpty()) {
@@ -202,8 +219,8 @@ public class ApiVerticle extends AbstractVerticle {
         
         switch (mode) {
             case "cluster" -> {
-                options.setType(io.vertx.redis.client.RedisClientType.CLUSTER);
-                io.vertx.core.json.JsonArray nodes = redisConfig.getJsonArray("nodes", new io.vertx.core.json.JsonArray());
+                options.setType(RedisClientType.CLUSTER);
+                JsonArray nodes = redisConfig.getJsonArray("nodes", new JsonArray());
                 if (nodes.isEmpty()) {
                     options.addConnectionString("redis://localhost:7001");
                     options.addConnectionString("redis://localhost:7002");
@@ -215,10 +232,10 @@ public class ApiVerticle extends AbstractVerticle {
                 }
             }
             case "sentinel" -> {
-                options.setType(io.vertx.redis.client.RedisClientType.SENTINEL);
+                options.setType(RedisClientType.SENTINEL);
                 options.setMasterName(redisConfig.getString("masterName", "mymaster"));
-                options.setRole(io.vertx.redis.client.RedisRole.MASTER);
-                io.vertx.core.json.JsonArray sentinels = redisConfig.getJsonArray("sentinels", new io.vertx.core.json.JsonArray());
+                options.setRole(RedisRole.MASTER);
+                JsonArray sentinels = redisConfig.getJsonArray("sentinels", new JsonArray());
                 if (sentinels.isEmpty()) {
                     options.addConnectionString("redis://localhost:26379");
                 } else {
@@ -228,7 +245,7 @@ public class ApiVerticle extends AbstractVerticle {
                 }
             }
             default -> {
-                options.setType(io.vertx.redis.client.RedisClientType.STANDALONE);
+                options.setType(RedisClientType.STANDALONE);
                 String host = redisConfig.getString("host", "localhost");
                 int port = redisConfig.getInteger("port", 6379);
                 options.setConnectionString("redis://" + host + ":" + port);
@@ -238,18 +255,18 @@ public class ApiVerticle extends AbstractVerticle {
         options.setMaxPoolSize(redisConfig.getInteger("maxPoolSize", 8));
         options.setMaxPoolWaiting(redisConfig.getInteger("maxPoolWaiting", 32));
         
-        io.vertx.redis.client.Redis redisClient = io.vertx.redis.client.Redis.createClient(vertx, options);
+        Redis redisClient = Redis.createClient(vertx, options);
         
         return redisClient.connect()
             .map(conn -> {
                 log.info("Redis connected for RateLimiter");
-                redisApi = io.vertx.redis.client.RedisAPI.api(conn);
+                redisApi = RedisAPI.api(conn);
                 return (Void) null;
             })
             .recover(err -> {
                 log.warn("Failed to connect Redis for RateLimiter, continuing without rate limiting", err);
                 // Redis 연결 실패해도 서버는 시작 (RateLimiter는 null 체크 필요)
-                return io.vertx.core.Future.<Void>succeededFuture();
+                return Future.<Void>succeededFuture();
             });
     }
     
@@ -259,14 +276,14 @@ public class ApiVerticle extends AbstractVerticle {
      */
     private void registerRouters(Router mainRouter) {
         // User 도메인
-        com.csms.user.repository.UserRepository userRepository = new com.csms.user.repository.UserRepository();
-        com.csms.user.service.UserService userService = new com.csms.user.service.UserService(
+        UserRepository userRepository = new UserRepository();
+        UserService userService = new UserService(
             serviceFactory.getPool(),
             userRepository,
             serviceFactory.getJwtAuth(),
             serviceFactory.getJwtConfig()
         );
-        com.csms.user.handler.UserHandler userHandler = new com.csms.user.handler.UserHandler(
+        UserHandler userHandler = new UserHandler(
             vertx,
             userService,
             serviceFactory.getJwtAuth()
@@ -274,166 +291,131 @@ public class ApiVerticle extends AbstractVerticle {
         mainRouter.mountSubRouter("/api/v1/users", userHandler.getRouter());
         
         // Admin 도메인
-        com.csms.admin.repository.AdminRepository adminRepository = new com.csms.admin.repository.AdminRepository();
+        AdminRepository adminRepository = new AdminRepository();
         // RateLimiter는 Redis 연결이 실패해도 null일 수 있으므로 체크 필요
-        com.csms.common.utils.RateLimiter rateLimiter = redisApi != null 
-            ? new com.csms.common.utils.RateLimiter(redisApi)
+        RateLimiter rateLimiter = redisApi != null 
+            ? new RateLimiter(redisApi)
             : null; // Redis 연결 실패 시 null (RateLimiter에서 null 체크 필요)
-        com.csms.admin.service.AdminAuthService adminAuthService = new com.csms.admin.service.AdminAuthService(
+        AdminAuthService adminAuthService = new AdminAuthService(
             serviceFactory.getPool(),
             adminRepository,
             serviceFactory.getJwtAuth(),
             serviceFactory.getJwtConfig(),
             rateLimiter
         );
-        com.csms.admin.handler.AdminAuthHandler adminAuthHandler = new com.csms.admin.handler.AdminAuthHandler(
+        AdminAuthHandler adminAuthHandler = new AdminAuthHandler(
             vertx,
             adminAuthService
         );
         mainRouter.mountSubRouter("/api/v1/admin/auth", adminAuthHandler.getRouter());
         
         // Admin Dashboard
-        com.csms.admin.service.AdminDashboardService adminDashboardService = new com.csms.admin.service.AdminDashboardService(
+        AdminDashboardService adminDashboardService = new AdminDashboardService(
             serviceFactory.getPool()
         );
-        com.csms.admin.handler.AdminDashboardHandler adminDashboardHandler = new com.csms.admin.handler.AdminDashboardHandler(
+        AdminDashboardHandler adminDashboardHandler = new AdminDashboardHandler(
             vertx,
             adminDashboardService,
             serviceFactory.getJwtAuth()
         );
         mainRouter.mountSubRouter("/api/v1/admin", adminDashboardHandler.getRouter());
         
-        // Admin Member 도메인
-        com.csms.admin.service.AdminMemberService adminMemberService = new com.csms.admin.service.AdminMemberService(
+        // Admin Member 도메인 (통합)
+        AdminMemberService adminMemberService = new AdminMemberService(
             serviceFactory.getPool()
         );
-        com.csms.admin.service.AdminMemberExportService adminMemberExportService = new com.csms.admin.service.AdminMemberExportService(
+        AdminMemberExportService adminMemberExportService = new AdminMemberExportService(
             serviceFactory.getPool()
         );
-        com.csms.admin.handler.AdminMemberHandler adminMemberHandler = new com.csms.admin.handler.AdminMemberHandler(
-            vertx,
-            adminMemberService,
-            adminMemberExportService
-        );
-        mainRouter.mountSubRouter("/api/v1/admin/members", adminMemberHandler.getRouter());
-        
-        // Admin Mining History 도메인 (회원별 채굴 내역)
-        com.csms.admin.repository.AdminMiningHistoryRepository adminMiningHistoryRepository = new com.csms.admin.repository.AdminMiningHistoryRepository(
+        AdminMiningHistoryRepository adminMiningHistoryRepository = new AdminMiningHistoryRepository(
             serviceFactory.getPool()
         );
-        com.csms.admin.service.AdminMiningHistoryService adminMiningHistoryService = new com.csms.admin.service.AdminMiningHistoryService(
+        AdminMiningHistoryService adminMiningHistoryService = new AdminMiningHistoryService(
             serviceFactory.getPool(),
             adminMiningHistoryRepository
         );
-        com.csms.admin.service.AdminMiningHistoryExportService adminMiningHistoryExportService = new com.csms.admin.service.AdminMiningHistoryExportService(
+        AdminMiningHistoryExportService adminMiningHistoryExportService = new AdminMiningHistoryExportService(
             serviceFactory.getPool()
         );
-        com.csms.admin.handler.AdminMiningHistoryHandler adminMiningHistoryHandler = new com.csms.admin.handler.AdminMiningHistoryHandler(
+        AdminMemberHandler adminMemberHandler = new AdminMemberHandler(
             vertx,
+            adminMemberService,
+            adminMemberExportService,
             adminMiningHistoryService,
             adminMiningHistoryExportService
         );
-        mainRouter.mountSubRouter("/api/v1/admin/members", adminMiningHistoryHandler.getRouter());
+        mainRouter.mountSubRouter("/api/v1/admin/members", adminMemberHandler.getRouter());
         
-        // Admin Mining 도메인
-        com.csms.admin.repository.AdminMiningRepository adminMiningRepository = new com.csms.admin.repository.AdminMiningRepository(
+        // Admin Mining 도메인 (통합)
+        AdminMiningRepository adminMiningRepository = new AdminMiningRepository(
             serviceFactory.getPool()
         );
-        com.csms.admin.service.AdminMiningService adminMiningService = new com.csms.admin.service.AdminMiningService(
+        AdminMiningService adminMiningService = new AdminMiningService(
             serviceFactory.getPool(),
             adminMiningRepository
         );
-        com.csms.admin.service.AdminMiningExportService adminMiningExportService = new com.csms.admin.service.AdminMiningExportService(
+        AdminMiningExportService adminMiningExportService = new AdminMiningExportService(
             serviceFactory.getPool()
         );
-        com.csms.admin.handler.AdminMiningHandler adminMiningHandler = new com.csms.admin.handler.AdminMiningHandler(
-            vertx,
-            adminMiningService,
-            adminMiningExportService
-        );
-        mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningHandler.getRouter());
-        
-        // Admin Mining Condition 도메인
-        com.csms.admin.repository.AdminMiningConditionRepository adminMiningConditionRepository = new com.csms.admin.repository.AdminMiningConditionRepository(
+        AdminMiningConditionRepository adminMiningConditionRepository = new AdminMiningConditionRepository(
             serviceFactory.getPool()
         );
-        com.csms.admin.service.AdminMiningConditionService adminMiningConditionService = new com.csms.admin.service.AdminMiningConditionService(
+        AdminMiningConditionService adminMiningConditionService = new AdminMiningConditionService(
             serviceFactory.getPool(),
             adminMiningConditionRepository
         );
-        com.csms.admin.handler.AdminMiningConditionHandler adminMiningConditionHandler = new com.csms.admin.handler.AdminMiningConditionHandler(
-            vertx,
-            adminMiningConditionService
-        );
-        mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningConditionHandler.getRouter());
-        
-        // Admin Mining History List 도메인 (채굴 내역 목록)
-        com.csms.admin.repository.AdminMiningHistoryListRepository adminMiningHistoryListRepository = new com.csms.admin.repository.AdminMiningHistoryListRepository(
+        AdminMiningBoosterRepository adminMiningBoosterRepository = new AdminMiningBoosterRepository(
             serviceFactory.getPool()
         );
-        com.csms.admin.service.AdminMiningHistoryListService adminMiningHistoryListService = new com.csms.admin.service.AdminMiningHistoryListService(
-            serviceFactory.getPool(),
-            adminMiningHistoryListRepository
-        );
-        com.csms.admin.service.AdminMiningHistoryListExportService adminMiningHistoryListExportService = new com.csms.admin.service.AdminMiningHistoryListExportService(
-            serviceFactory.getPool()
-        );
-        com.csms.admin.handler.AdminMiningHistoryListHandler adminMiningHistoryListHandler = new com.csms.admin.handler.AdminMiningHistoryListHandler(
-            vertx,
-            adminMiningHistoryListService,
-            adminMiningHistoryListExportService
-        );
-        mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningHistoryListHandler.getRouter());
-        
-        // Admin Mining Booster 도메인
-        com.csms.admin.repository.AdminMiningBoosterRepository adminMiningBoosterRepository = new com.csms.admin.repository.AdminMiningBoosterRepository(
-            serviceFactory.getPool()
-        );
-        com.csms.admin.service.AdminMiningBoosterService adminMiningBoosterService = new com.csms.admin.service.AdminMiningBoosterService(
+        AdminMiningBoosterService adminMiningBoosterService = new AdminMiningBoosterService(
             serviceFactory.getPool(),
             adminMiningBoosterRepository
         );
-        com.csms.admin.handler.AdminMiningBoosterHandler adminMiningBoosterHandler = new com.csms.admin.handler.AdminMiningBoosterHandler(
-            vertx,
-            adminMiningBoosterService
-        );
-        mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningBoosterHandler.getRouter());
-        
-        // Admin Referral Bonus 도메인
-        com.csms.admin.repository.AdminReferralBonusRepository adminReferralBonusRepository = new com.csms.admin.repository.AdminReferralBonusRepository(
+        AdminMiningHistoryListRepository adminMiningHistoryListRepository = new AdminMiningHistoryListRepository(
             serviceFactory.getPool()
         );
-        com.csms.admin.service.AdminReferralBonusService adminReferralBonusService = new com.csms.admin.service.AdminReferralBonusService(
+        AdminMiningHistoryListService adminMiningHistoryListService = new AdminMiningHistoryListService(
+            serviceFactory.getPool(),
+            adminMiningHistoryListRepository
+        );
+        AdminMiningHistoryListExportService adminMiningHistoryListExportService = new AdminMiningHistoryListExportService(
+            serviceFactory.getPool()
+        );
+        // Admin Referral Bonus & Ranking Reward (같은 경로에 마운트되어 있음)
+        AdminReferralBonusRepository adminReferralBonusRepository = new AdminReferralBonusRepository(
+            serviceFactory.getPool()
+        );
+        AdminReferralBonusService adminReferralBonusService = new AdminReferralBonusService(
             serviceFactory.getPool(),
             adminReferralBonusRepository
         );
-        com.csms.admin.handler.AdminReferralBonusHandler adminReferralBonusHandler = new com.csms.admin.handler.AdminReferralBonusHandler(
-            vertx,
-            adminReferralBonusService
-        );
-        mainRouter.mountSubRouter("/api/v1/admin/mining", adminReferralBonusHandler.getRouter());
-        
-        // Admin Ranking Reward 도메인
-        com.csms.admin.repository.AdminRankingRewardRepository adminRankingRewardRepository = new com.csms.admin.repository.AdminRankingRewardRepository(
+        AdminRankingRewardRepository adminRankingRewardRepository = new AdminRankingRewardRepository(
             serviceFactory.getPool()
         );
-        com.csms.admin.service.AdminRankingRewardService adminRankingRewardService = new com.csms.admin.service.AdminRankingRewardService(
+        AdminRankingRewardService adminRankingRewardService = new AdminRankingRewardService(
             serviceFactory.getPool(),
             adminRankingRewardRepository
         );
-        com.csms.admin.handler.AdminRankingRewardHandler adminRankingRewardHandler = new com.csms.admin.handler.AdminRankingRewardHandler(
+        AdminMiningHandler adminMiningHandler = new AdminMiningHandler(
             vertx,
+            adminMiningService,
+            adminMiningExportService,
+            adminMiningConditionService,
+            adminMiningBoosterService,
+            adminMiningHistoryListService,
+            adminMiningHistoryListExportService,
+            adminReferralBonusService,
             adminRankingRewardService
         );
-        mainRouter.mountSubRouter("/api/v1/admin/mining", adminRankingRewardHandler.getRouter());
+        mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningHandler.getRouter());
         
         // Currency 도메인
-        com.csms.currency.repository.CurrencyRepository currencyRepository = new com.csms.currency.repository.CurrencyRepository();
-        com.csms.currency.service.CurrencyService currencyService = new com.csms.currency.service.CurrencyService(
+        CurrencyRepository currencyRepository = new CurrencyRepository();
+        CurrencyService currencyService = new CurrencyService(
             serviceFactory.getPool(),
             currencyRepository
         );
-        com.csms.currency.handler.CurrencyHandler currencyHandler = new com.csms.currency.handler.CurrencyHandler(
+        CurrencyHandler currencyHandler = new CurrencyHandler(
             vertx,
             currencyService
         );

@@ -1,25 +1,56 @@
 package com.csms.admin.service;
 
 import com.csms.admin.dto.*;
-import io.vertx.core.Future;
-import io.vertx.junit5.VertxExtension;
+import com.csms.common.HandlerTestBase;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.PoolOptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import io.vertx.junit5.VertxExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith({VertxExtension.class, MockitoExtension.class})
-class AdminMemberServiceExtendedTest {
+@ExtendWith(VertxExtension.class)
+class AdminMemberServiceExtendedTest extends HandlerTestBase {
     
-    @Mock
-    private PgPool pool;
-    
+    private static PgPool pool;
     private AdminMemberService service;
+    
+    public AdminMemberServiceExtendedTest() {
+        super("/api/admin");
+    }
+    
+    @BeforeAll
+    static void setUpPool(Vertx vertx, VertxTestContext testContext) {
+        try {
+            // test용 config.json에서 test 환경 설정 로드
+            String configContent = vertx.fileSystem().readFileBlocking("src/test/resources/config.json").toString();
+            JsonObject fullConfig = new JsonObject(configContent);
+            JsonObject config = fullConfig.getJsonObject("test");
+            JsonObject dbConfig = config.getJsonObject("database");
+            
+            PgConnectOptions connectOptions = new PgConnectOptions()
+                .setHost(dbConfig.getString("host"))
+                .setPort(dbConfig.getInteger("port"))
+                .setDatabase(dbConfig.getString("database"))
+                .setUser(dbConfig.getString("user"))
+                .setPassword(dbConfig.getString("password"));
+            
+            PoolOptions poolOptions = new PoolOptions()
+                .setMaxSize(dbConfig.getInteger("pool_size", 5));
+            
+            pool = PgPool.pool(vertx, connectOptions, poolOptions);
+            testContext.completeNow();
+        } catch (Exception e) {
+            testContext.failNow(e);
+        }
+    }
     
     @BeforeEach
     void setUp() {

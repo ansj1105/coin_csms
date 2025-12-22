@@ -1,8 +1,7 @@
 package com.csms.admin.handler;
 
 import com.csms.admin.dto.*;
-import com.csms.admin.service.AdminMemberService;
-import com.csms.admin.service.AdminMemberExportService;
+import com.csms.admin.service.*;
 import com.csms.common.handler.BaseHandler;
 import com.csms.common.utils.ErrorHandler;
 import io.vertx.core.Vertx;
@@ -20,11 +19,21 @@ public class AdminMemberHandler extends BaseHandler {
     
     private final AdminMemberService service;
     private final AdminMemberExportService exportService;
+    private final AdminMiningHistoryService miningHistoryService;
+    private final AdminMiningHistoryExportService miningHistoryExportService;
     
-    public AdminMemberHandler(Vertx vertx, AdminMemberService service, AdminMemberExportService exportService) {
+    public AdminMemberHandler(
+        Vertx vertx,
+        AdminMemberService service,
+        AdminMemberExportService exportService,
+        AdminMiningHistoryService miningHistoryService,
+        AdminMiningHistoryExportService miningHistoryExportService
+    ) {
         super(vertx);
         this.service = service;
         this.exportService = exportService;
+        this.miningHistoryService = miningHistoryService;
+        this.miningHistoryExportService = miningHistoryExportService;
     }
     
     public Router getRouter() {
@@ -39,6 +48,10 @@ public class AdminMemberHandler extends BaseHandler {
         router.post("/kori-points/adjust").handler(this::adjustKoriPoint);
         router.get("/:id/wallets").handler(this::getMemberWallets);
         router.get("/export").handler(this::exportMembers);
+        
+        // Mining History (회원별 채굴 내역)
+        router.get("/:userId/mining-history").handler(this::getMiningHistory);
+        router.get("/:userId/mining-history/export").handler(this::exportMiningHistory);
         
         return router;
     }
@@ -223,6 +236,60 @@ public class AdminMemberHandler extends BaseHandler {
                 });
         } catch (Exception e) {
             log.error("Error in exportMembers", e);
+            ErrorHandler.handle(ctx);
+        }
+    }
+    
+    // Mining History (회원별 채굴 내역)
+    private void getMiningHistory(RoutingContext ctx) {
+        try {
+            Long userId = Long.parseLong(ctx.pathParam("userId"));
+            Integer limit = getQueryParamAsInteger(ctx, "limit", 20);
+            Integer offset = getQueryParamAsInteger(ctx, "offset", 0);
+            String dateRange = ctx.queryParams().get("dateRange");
+            
+            miningHistoryService.getMiningHistory(userId, limit, offset, dateRange)
+                .onSuccess(result -> {
+                    success(ctx, result);
+                })
+                .onFailure(throwable -> {
+                    ctx.fail(throwable);
+                    ErrorHandler.handle(ctx);
+                });
+        } catch (NumberFormatException e) {
+            ctx.fail(400, new IllegalArgumentException("Invalid user ID"));
+            ErrorHandler.handle(ctx);
+        } catch (Exception e) {
+            ctx.fail(e);
+            ErrorHandler.handle(ctx);
+        }
+    }
+    
+    private void exportMiningHistory(RoutingContext ctx) {
+        try {
+            Long userId = Long.parseLong(ctx.pathParam("userId"));
+            String dateRange = ctx.queryParams().get("dateRange");
+            
+            miningHistoryExportService.exportToExcel(userId, dateRange)
+                .onSuccess(buffer -> {
+                    String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+                    String filename = "mining_history_" + userId + "_" + timestamp + ".xlsx";
+                    
+                    ctx.response()
+                        .putHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                        .putHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                        .putHeader("Content-Length", String.valueOf(buffer.length()))
+                        .end(buffer);
+                })
+                .onFailure(throwable -> {
+                    ctx.fail(throwable);
+                    ErrorHandler.handle(ctx);
+                });
+        } catch (NumberFormatException e) {
+            ctx.fail(400, new IllegalArgumentException("Invalid user ID"));
+            ErrorHandler.handle(ctx);
+        } catch (Exception e) {
+            ctx.fail(e);
             ErrorHandler.handle(ctx);
         }
     }

@@ -1,8 +1,7 @@
 package com.csms.admin.handler;
 
 import com.csms.admin.dto.*;
-import com.csms.admin.service.AdminMemberService;
-import com.csms.admin.service.AdminMemberExportService;
+import com.csms.admin.service.*;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -28,13 +27,19 @@ class AdminMemberHandlerTest {
     @Mock
     private AdminMemberExportService exportService;
     
+    @Mock
+    private AdminMiningHistoryService miningHistoryService;
+    
+    @Mock
+    private AdminMiningHistoryExportService miningHistoryExportService;
+    
     private AdminMemberHandler handler;
     private Vertx vertx;
     
     @BeforeEach
     void setUp(Vertx vertx) {
         this.vertx = vertx;
-        handler = new AdminMemberHandler(vertx, service, exportService);
+        handler = new AdminMemberHandler(vertx, service, exportService, miningHistoryService, miningHistoryExportService);
     }
     
     @Test
