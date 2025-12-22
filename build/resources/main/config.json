@@ -1,0 +1,86 @@
+{
+  "env": "local",
+  "local": {
+    "http": {
+      "port": 8080
+    },
+    "frontend": {
+      "baseUrl": "http://localhost:3000"
+    },
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "csms",
+      "user": "postgres",
+      "password": "postgres",
+      "pool_size": 10,
+      "idle_timeout": 60,
+      "pool_cleaner_period": 60
+    },
+    "jwt": {
+      "secret": "your-jwt-secret-key-for-csms-change-this-in-production",
+      "access_token_expire_minutes": 30,
+      "refresh_token_expire_minutes": 14400
+    },
+    "redis": {
+      "mode": "standalone",
+      "host": "localhost",
+      "port": 6379,
+      "password": "",
+      "maxPoolSize": 8,
+      "maxPoolWaiting": 32
+    },
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "username": "",
+      "password": "",
+      "from": "no-reply@csms.com",
+      "starttls": "REQUIRED",
+      "login": "LOGIN",
+      "authMethods": "PLAIN"
+    }
+  },
+  "prod": {
+    "http": {
+      "port": 8080
+    },
+    "frontend": {
+      "baseUrl": "http://localhost"
+    },
+    "database": {
+      "host": "postgres",
+      "port": 5432,
+      "database": "csms",
+      "user": "csms",
+      "password": "change-this",
+      "pool_size": 20,
+      "idle_timeout": 60,
+      "pool_cleaner_period": 60
+    },
+    "jwt": {
+      "secret": "your-production-jwt-secret-key-change-this",
+      "access_token_expire_minutes": 30,
+      "refresh_token_expire_minutes": 14400
+    },
+    "redis": {
+      "mode": "standalone",
+      "host": "redis",
+      "port": 6379,
+      "password": "",
+      "maxPoolSize": 16,
+      "maxPoolWaiting": 64
+    },
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "username": "",
+      "password": "",
+      "from": "no-reply@csms.com",
+      "starttls": "REQUIRED",
+      "login": "LOGIN",
+      "authMethods": "PLAIN"
+    }
+  }
+}
+
