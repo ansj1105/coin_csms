@@ -385,6 +385,20 @@ public class ApiVerticle extends AbstractVerticle {
         );
         mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningHistoryListHandler.getRouter());
         
+        // Admin Mining Booster 도메인
+        com.csms.admin.repository.AdminMiningBoosterRepository adminMiningBoosterRepository = new com.csms.admin.repository.AdminMiningBoosterRepository(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.service.AdminMiningBoosterService adminMiningBoosterService = new com.csms.admin.service.AdminMiningBoosterService(
+            serviceFactory.getPool(),
+            adminMiningBoosterRepository
+        );
+        com.csms.admin.handler.AdminMiningBoosterHandler adminMiningBoosterHandler = new com.csms.admin.handler.AdminMiningBoosterHandler(
+            vertx,
+            adminMiningBoosterService
+        );
+        mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningBoosterHandler.getRouter());
+        
         // Currency 도메인
         com.csms.currency.repository.CurrencyRepository currencyRepository = new com.csms.currency.repository.CurrencyRepository();
         com.csms.currency.service.CurrencyService currencyService = new com.csms.currency.service.CurrencyService(

@@ -1172,6 +1172,109 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /admin/mining/booster:
+    get:
+      tags:
+        - Admin
+      summary: 채굴 부스터 설정 조회
+      description: 채굴 부스터 설정을 조회합니다.
+      operationId: getMiningBoosters
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                status: OK
+                message: 요청이 완료되었습니다.
+                data:
+                  boosters:
+                    - type: SOCIAL_LINK
+                      name: 카카오/구글/이메일/네이버 연동시
+                      isEnabled: true
+                      efficiency: 5
+                    - type: PHONE_VERIFICATION
+                      name: 본인인증(휴대폰) 등록시
+                      isEnabled: true
+                      efficiency: 5
+                    - type: REVIEW
+                      name: 리뷰 작성시
+                      isEnabled: true
+                      efficiency: 10
+                    - type: AGENCY
+                      name: 에이전시 가입시
+                      isEnabled: true
+                      efficiency: 80
+                    - type: PREMIUM
+                      name: 프리미엄 패키지 구독시
+                      isEnabled: true
+                      efficiency: 40
+                    - type: AD_VIEW
+                      name: 광고시청 보너스
+                      isEnabled: true
+                      efficiency: 25
+                      maxCount: 5
+                      perUnitEfficiency: 5
+                      note: 시청횟수: 계정당 하루 최대 채굴효율(%): 1회당 +% 채굴효율 ex) 5회 x 5% = +25%
+                    - type: REFERRER_REGISTRATION
+                      name: 추천인 등록시
+                      isEnabled: true
+                      efficiency: 5
+                    - type: INVITATION_REWARD
+                      name: 초대보상 보너스
+                      isEnabled: true
+                      efficiency: 50
+                      maxCount: 5
+                      perUnitEfficiency: 10
+                      note: 초대인원: 최대 몇명 채굴효율(%): 1명당 +% 채굴효율 ex) 5명 x 10% = +50%
+                  summary:
+                    totalEfficiency: 230
+                    miningAmountPerMinute: 0.100
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Admin
+      summary: 채굴 부스터 설정 업데이트
+      description: 채굴 부스터 설정을 업데이트합니다.
+      operationId: updateBooster
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoosterRequest'
+      responses:
+        '200':
+          description: 업데이트 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /users/register:
     post:
       tags:
@@ -2268,4 +2371,97 @@ components:
         sanctionStatus:
           type: string
           example: NONE
+
+    MiningBoosterResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/MiningBooster'
+
+    MiningBooster:
+      type: object
+      properties:
+        boosters:
+          type: array
+          items:
+            $ref: '#/components/schemas/Booster'
+        summary:
+          $ref: '#/components/schemas/BoosterSummary'
+
+    Booster:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [SOCIAL_LINK, PHONE_VERIFICATION, REVIEW, AGENCY, PREMIUM, AD_VIEW, REFERRER_REGISTRATION, INVITATION_REWARD]
+          example: SOCIAL_LINK
+        name:
+          type: string
+          example: 카카오/구글/이메일/네이버 연동시
+        isEnabled:
+          type: boolean
+          example: true
+        efficiency:
+          type: integer
+          example: 5
+        maxCount:
+          type: integer
+          nullable: true
+          example: 5
+          description: 복합 부스터용 (AD_VIEW, INVITATION_REWARD)
+        perUnitEfficiency:
+          type: integer
+          nullable: true
+          example: 5
+          description: 복합 부스터용 (AD_VIEW, INVITATION_REWARD)
+        note:
+          type: string
+          nullable: true
+          example: 시청횟수: 계정당 하루 최대 채굴효율(%): 1회당 +% 채굴효율 ex) 5회 x 5% = +25%
+
+    BoosterSummary:
+      type: object
+      properties:
+        totalEfficiency:
+          type: integer
+          example: 230
+          description: 활성화된 모든 부스터의 총 효율(%)
+        miningAmountPerMinute:
+          type: number
+          format: double
+          example: 0.100
+          description: 최대 효율 적용 시 시간(분)당 채굴량 (KRWT)
+
+    UpdateBoosterRequest:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [SOCIAL_LINK, PHONE_VERIFICATION, REVIEW, AGENCY, PREMIUM, AD_VIEW, REFERRER_REGISTRATION, INVITATION_REWARD]
+          example: SOCIAL_LINK
+          description: 부스터 타입 (필수)
+        isEnabled:
+          type: boolean
+          example: true
+          description: 활성화 여부 (선택)
+        efficiency:
+          type: integer
+          example: 5
+          description: 채굴효율(%) (선택, 단순 부스터용)
+        maxCount:
+          type: integer
+          example: 5
+          description: 최대 횟수/인원 (선택, 복합 부스터용)
+        perUnitEfficiency:
+          type: integer
+          example: 5
+          description: 1회당/1명당 효율 (선택, 복합 부스터용)
 

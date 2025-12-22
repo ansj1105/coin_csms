@@ -241,7 +241,7 @@ public class AdminMiningConditionRepository extends BaseRepository {
         params.put("base_time_minutes", baseTimeMinutes);
         
         return query(pool, sql, params)
-            .map(rows -> null)
+            .compose(rows -> Future.succeededFuture())
             .onFailure(throwable -> log.error("기본 조건 업데이트 실패", throwable));
     }
     
@@ -262,7 +262,7 @@ public class AdminMiningConditionRepository extends BaseRepository {
         params.put("is_enabled", isEnabled);
         
         return query(pool, sql, params)
-            .map(rows -> null)
+            .compose(rows -> Future.succeededFuture())
             .onFailure(throwable -> log.error("미션 업데이트 실패 - type: {}", type, throwable));
     }
     
@@ -290,7 +290,7 @@ public class AdminMiningConditionRepository extends BaseRepository {
         params.put("coins_per_hour", coinsPerHour);
         
         return query(pool, sql, params)
-            .map(rows -> null)
+            .compose(rows -> Future.succeededFuture())
             .onFailure(throwable -> log.error("진행 설정 업데이트 실패 - key: {}", settingKey, throwable));
     }
     
@@ -309,7 +309,7 @@ public class AdminMiningConditionRepository extends BaseRepository {
         params.put("daily_limit", dailyLimit);
         
         return query(pool, sql, params)
-            .map(rows -> null)
+            .compose(rows -> Future.succeededFuture())
             .onFailure(throwable -> log.error("레벨 한도 업데이트 실패 - level: {}", level, throwable));
     }
     
@@ -327,7 +327,7 @@ public class AdminMiningConditionRepository extends BaseRepository {
         params.put("is_enabled", enabled);
         
         return query(pool, sql, params)
-            .map(rows -> null)
+            .compose(rows -> Future.succeededFuture())
             .onFailure(throwable -> log.error("레벨 한도 활성화 업데이트 실패", throwable));
     }
 }
