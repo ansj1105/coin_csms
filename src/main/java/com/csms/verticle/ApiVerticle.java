@@ -244,12 +244,12 @@ public class ApiVerticle extends AbstractVerticle {
             .map(conn -> {
                 log.info("Redis connected for RateLimiter");
                 redisApi = io.vertx.redis.client.RedisAPI.api(conn);
-                return null;
+                return (Void) null;
             })
             .recover(err -> {
                 log.warn("Failed to connect Redis for RateLimiter, continuing without rate limiting", err);
                 // Redis 연결 실패해도 서버는 시작 (RateLimiter는 null 체크 필요)
-                return io.vertx.core.Future.succeededFuture();
+                return io.vertx.core.Future.<Void>succeededFuture();
             });
     }
     

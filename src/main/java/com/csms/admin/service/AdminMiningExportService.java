@@ -36,8 +36,8 @@ public class AdminMiningExportService {
         // 날짜 범위 계산
         com.csms.common.utils.DateUtils.DateRange range = 
             com.csms.common.utils.DateUtils.calculateDateRange(dateRange, startDate, endDate);
-        LocalDateTime startDateTime = range.startDate.atStartOfDay();
-        LocalDateTime endDateTime = range.endDate.atTime(23, 59, 59);
+        LocalDateTime startDateTime = range.startDate().atStartOfDay();
+        LocalDateTime endDateTime = range.endDate().atTime(23, 59, 59);
         
         // 모든 데이터 조회 (페이지네이션 없이)
         return repository.getMiningRecords(

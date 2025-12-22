@@ -205,7 +205,7 @@ public class AdminMiningBoosterRepository extends BaseRepository {
         params.put("per_unit_efficiency", perUnitEfficiency);
         
         return query(pool, sql, params)
-            .compose(rows -> Future.succeededFuture())
+            .compose(rows -> Future.<Void>succeededFuture())
             .onFailure(throwable -> log.error("부스터 업데이트 실패 - type: {}", type, throwable));
     }
 }

@@ -164,8 +164,8 @@ public class AdminMiningRepository extends BaseRepository {
         
         return query(pool, countSql.toString(), countParams)
             .compose(countRows -> {
-                Integer total = fetchOne(countRows, row -> getInteger(row, "total"));
-                if (total == null) total = 0;
+                Integer totalValue = fetchOne(row -> getInteger(row, "total"), countRows);
+                final Integer total = totalValue != null ? totalValue : 0;
                 
                 // 데이터 조회
                 sql.append(" LIMIT :limit OFFSET :offset");

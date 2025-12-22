@@ -37,8 +37,8 @@ public class AdminMiningService extends BaseService {
         
         // 날짜 범위 계산
         DateUtils.DateRange range = DateUtils.calculateDateRange(dateRange, startDate, endDate);
-        LocalDateTime startDateTime = range.startDate.atStartOfDay();
-        LocalDateTime endDateTime = range.endDate.atTime(23, 59, 59);
+        LocalDateTime startDateTime = range.startDate().atStartOfDay();
+        LocalDateTime endDateTime = range.endDate().atTime(23, 59, 59);
         
         // 검색어 길이 제한
         if (searchKeyword != null && searchKeyword.length() > 20) {
