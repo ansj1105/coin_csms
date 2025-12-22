@@ -1172,6 +1172,140 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /admin/mining/referral-bonus:
+    get:
+      tags:
+        - Admin
+      summary: 래퍼럴 보너스 조건 설정 조회
+      description: 래퍼럴 보너스 조건 설정을 조회합니다.
+      operationId: getReferralBonus
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                status: OK
+                message: 요청이 완료되었습니다.
+                data:
+                  isEnabled: true
+                  distributionRate: 5
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Admin
+      summary: 래퍼럴 보너스 조건 설정 업데이트
+      description: 래퍼럴 보너스 조건 설정을 업데이트합니다.
+      operationId: updateReferralBonus
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReferralBonusRequest'
+      responses:
+        '200':
+          description: 업데이트 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/mining/ranking-reward:
+    get:
+      tags:
+        - Admin
+      summary: 랭킹 보상 보너스 설정 조회
+      description: 랭킹 보상 보너스 설정을 조회합니다.
+      operationId: getRankingReward
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                status: OK
+                message: 요청이 완료되었습니다.
+                data:
+                  regional:
+                    rank1: 10.00
+                    rank2: 5.00
+                    rank3: 2.50
+                    rank4to10: 0.80
+                  national:
+                    rank1: 10.00
+                    rank2: 5.00
+                    rank3: 2.50
+                    rank4to10: 0.80
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags:
+        - Admin
+      summary: 랭킹 보상 보너스 설정 업데이트
+      description: 랭킹 보상 보너스 설정을 업데이트합니다.
+      operationId: updateRankingReward
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRankingRewardRequest'
+      responses:
+        '200':
+          description: 업데이트 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /admin/mining/booster:
     get:
       tags:
@@ -2464,4 +2598,123 @@ components:
           type: integer
           example: 5
           description: 1회당/1명당 효율 (선택, 복합 부스터용)
+
+    ReferralBonusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/ReferralBonus'
+
+    ReferralBonus:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+          example: true
+          description: 래퍼럴 기능 활성화 여부
+        distributionRate:
+          type: integer
+          example: 5
+          description: 래퍼럴 보너스 분배율 (%)
+
+    UpdateReferralBonusRequest:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+          example: true
+          description: 래퍼럴 기능 활성화/비활성화
+        distributionRate:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 5
+          description: 래퍼럴 보너스 분배율 (%) (0~100 사이 값)
+
+    RankingRewardResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/RankingReward'
+
+    RankingReward:
+      type: object
+      properties:
+        regional:
+          $ref: '#/components/schemas/RankingRewardDetail'
+          description: 지역별 랭킹 보상 설정
+        national:
+          $ref: '#/components/schemas/RankingRewardDetail'
+          description: 국가별 랭킹 보상 설정
+
+    RankingRewardDetail:
+      type: object
+      properties:
+        rank1:
+          type: number
+          format: double
+          example: 10.00
+          description: 1등 보상 (KRWT)
+        rank2:
+          type: number
+          format: double
+          example: 5.00
+          description: 2등 보상 (KRWT)
+        rank3:
+          type: number
+          format: double
+          example: 2.50
+          description: 3등 보상 (KRWT)
+        rank4to10:
+          type: number
+          format: double
+          example: 0.80
+          description: 4~10등 각 등수당 보상 (KRWT)
+
+    UpdateRankingRewardRequest:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [REGIONAL, NATIONAL]
+          example: REGIONAL
+          description: 랭킹 타입 (필수)
+        rank1:
+          type: number
+          format: double
+          minimum: 0
+          example: 10.00
+          description: 1등 보상 (KRWT) (선택)
+        rank2:
+          type: number
+          format: double
+          minimum: 0
+          example: 5.00
+          description: 2등 보상 (KRWT) (선택)
+        rank3:
+          type: number
+          format: double
+          minimum: 0
+          example: 2.50
+          description: 3등 보상 (KRWT) (선택)
+        rank4to10:
+          type: number
+          format: double
+          minimum: 0
+          example: 0.80
+          description: 4~10등 각 등수당 보상 (KRWT) (선택)
 

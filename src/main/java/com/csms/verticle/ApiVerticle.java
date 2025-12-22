@@ -399,6 +399,34 @@ public class ApiVerticle extends AbstractVerticle {
         );
         mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningBoosterHandler.getRouter());
         
+        // Admin Referral Bonus 도메인
+        com.csms.admin.repository.AdminReferralBonusRepository adminReferralBonusRepository = new com.csms.admin.repository.AdminReferralBonusRepository(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.service.AdminReferralBonusService adminReferralBonusService = new com.csms.admin.service.AdminReferralBonusService(
+            serviceFactory.getPool(),
+            adminReferralBonusRepository
+        );
+        com.csms.admin.handler.AdminReferralBonusHandler adminReferralBonusHandler = new com.csms.admin.handler.AdminReferralBonusHandler(
+            vertx,
+            adminReferralBonusService
+        );
+        mainRouter.mountSubRouter("/api/v1/admin/mining", adminReferralBonusHandler.getRouter());
+        
+        // Admin Ranking Reward 도메인
+        com.csms.admin.repository.AdminRankingRewardRepository adminRankingRewardRepository = new com.csms.admin.repository.AdminRankingRewardRepository(
+            serviceFactory.getPool()
+        );
+        com.csms.admin.service.AdminRankingRewardService adminRankingRewardService = new com.csms.admin.service.AdminRankingRewardService(
+            serviceFactory.getPool(),
+            adminRankingRewardRepository
+        );
+        com.csms.admin.handler.AdminRankingRewardHandler adminRankingRewardHandler = new com.csms.admin.handler.AdminRankingRewardHandler(
+            vertx,
+            adminRankingRewardService
+        );
+        mainRouter.mountSubRouter("/api/v1/admin/mining", adminRankingRewardHandler.getRouter());
+        
         // Currency 도메인
         com.csms.currency.repository.CurrencyRepository currencyRepository = new com.csms.currency.repository.CurrencyRepository();
         com.csms.currency.service.CurrencyService currencyService = new com.csms.currency.service.CurrencyService(
