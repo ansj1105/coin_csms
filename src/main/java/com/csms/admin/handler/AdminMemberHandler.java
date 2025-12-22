@@ -1,8 +1,6 @@
 package com.csms.admin.handler;
 
-import com.csms.admin.dto.MemberDetailDto;
-import com.csms.admin.dto.MemberListDto;
-import com.csms.admin.dto.SanctionRequestDto;
+import com.csms.admin.dto.*;
 import com.csms.admin.service.AdminMemberService;
 import com.csms.admin.service.AdminMemberExportService;
 import com.csms.common.handler.BaseHandler;
@@ -34,7 +32,12 @@ public class AdminMemberHandler extends BaseHandler {
         
         router.get("/").handler(this::getMembers);
         router.get("/:id").handler(this::getMemberDetail);
+        router.patch("/:id").handler(this::updateMember);
         router.patch("/:id/sanction").handler(this::updateSanctionStatus);
+        router.post("/:id/reset-transaction-password").handler(this::resetTransactionPassword);
+        router.post("/coins/adjust").handler(this::adjustCoin);
+        router.post("/kori-points/adjust").handler(this::adjustKoriPoint);
+        router.get("/:id/wallets").handler(this::getMemberWallets);
         router.get("/export").handler(this::exportMembers);
         
         return router;
@@ -79,6 +82,27 @@ public class AdminMemberHandler extends BaseHandler {
         }
     }
     
+    private void updateMember(RoutingContext ctx) {
+        try {
+            Long memberId = Long.parseLong(ctx.pathParam("id"));
+            
+            JsonObject body = ctx.body().asJsonObject();
+            UpdateMemberRequestDto request = body.mapTo(UpdateMemberRequestDto.class);
+            
+            service.updateMember(memberId, request)
+                .onSuccess(result -> {
+                    success(ctx, new JsonObject().put("message", "Member updated"));
+                })
+                .onFailure(err -> {
+                    ErrorHandler.handle(ctx);
+                });
+        } catch (NumberFormatException e) {
+            ctx.fail(400, new IllegalArgumentException("Invalid member ID"));
+        } catch (Exception e) {
+            ErrorHandler.handle(ctx);
+        }
+    }
+    
     private void updateSanctionStatus(RoutingContext ctx) {
         try {
             Long memberId = Long.parseLong(ctx.pathParam("id"));
@@ -89,6 +113,80 @@ public class AdminMemberHandler extends BaseHandler {
             service.updateSanctionStatus(memberId, request)
                 .onSuccess(result -> {
                     success(ctx, new JsonObject().put("message", "Sanction status updated"));
+                })
+                .onFailure(err -> {
+                    ErrorHandler.handle(ctx);
+                });
+        } catch (NumberFormatException e) {
+            ctx.fail(400, new IllegalArgumentException("Invalid member ID"));
+        } catch (Exception e) {
+            ErrorHandler.handle(ctx);
+        }
+    }
+    
+    private void resetTransactionPassword(RoutingContext ctx) {
+        try {
+            Long memberId = Long.parseLong(ctx.pathParam("id"));
+            
+            service.resetTransactionPassword(memberId)
+                .onSuccess(result -> {
+                    success(ctx, new JsonObject().put("message", "Transaction password reset"));
+                })
+                .onFailure(err -> {
+                    ErrorHandler.handle(ctx);
+                });
+        } catch (NumberFormatException e) {
+            ctx.fail(400, new IllegalArgumentException("Invalid member ID"));
+        } catch (Exception e) {
+            ErrorHandler.handle(ctx);
+        }
+    }
+    
+    private void adjustCoin(RoutingContext ctx) {
+        try {
+            JsonObject body = ctx.body().asJsonObject();
+            CoinAdjustRequestDto request = body.mapTo(CoinAdjustRequestDto.class);
+            
+            service.adjustCoin(request)
+                .onSuccess(result -> {
+                    success(ctx, new JsonObject().put("message", "Coin adjusted"));
+                })
+                .onFailure(err -> {
+                    ErrorHandler.handle(ctx);
+                });
+        } catch (Exception e) {
+            ErrorHandler.handle(ctx);
+        }
+    }
+    
+    private void adjustKoriPoint(RoutingContext ctx) {
+        try {
+            JsonObject body = ctx.body().asJsonObject();
+            KoriPointAdjustRequestDto request = body.mapTo(KoriPointAdjustRequestDto.class);
+            
+            service.adjustKoriPoint(request)
+                .onSuccess(result -> {
+                    success(ctx, new JsonObject().put("message", "KORI point adjusted"));
+                })
+                .onFailure(err -> {
+                    ErrorHandler.handle(ctx);
+                });
+        } catch (Exception e) {
+            ErrorHandler.handle(ctx);
+        }
+    }
+    
+    private void getMemberWallets(RoutingContext ctx) {
+        try {
+            Long memberId = Long.parseLong(ctx.pathParam("id"));
+            String network = ctx.queryParams().get("network");
+            String token = ctx.queryParams().get("token");
+            Integer limit = getQueryParamAsInteger(ctx, "limit", 20);
+            Integer offset = getQueryParamAsInteger(ctx, "offset", 0);
+            
+            service.getMemberWallets(memberId, network, token, limit, offset)
+                .onSuccess(result -> {
+                    success(ctx, result);
                 })
                 .onFailure(err -> {
                     ErrorHandler.handle(ctx);

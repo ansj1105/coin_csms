@@ -330,5 +330,194 @@ public class AdminMemberRepository extends BaseRepository {
                 return null;
             });
     }
+    
+    public Future<Void> updateMember(Long memberId, String phone, String email, Integer level) {
+        StringBuilder sql = new StringBuilder("UPDATE users SET updated_at = NOW()");
+        Map<String, Object> params = new HashMap<>();
+        params.put("member_id", memberId);
+        
+        if (phone != null) {
+            sql.append(", phone = :phone");
+            params.put("phone", phone);
+        }
+        if (email != null) {
+            sql.append(", email = :email");
+            params.put("email", email);
+        }
+        if (level != null) {
+            sql.append(", level = :level");
+            params.put("level", level);
+        }
+        
+        sql.append(" WHERE id = :member_id");
+        
+        return query(pool, sql.toString(), params)
+            .map(updateResult -> {
+                if (updateResult.rowCount() == 0) {
+                    throw new com.csms.common.exceptions.NotFoundException("Member not found");
+                }
+                return null;
+            });
+    }
+    
+    public Future<Void> resetTransactionPassword(Long memberId) {
+        // 거래 비밀번호를 "0000"으로 초기화
+        // users 테이블에 transaction_password 필드가 있다고 가정
+        // "0000"을 BCrypt로 해시화
+        String passwordHash = org.mindrot.jbcrypt.BCrypt.hashpw("0000", org.mindrot.jbcrypt.BCrypt.gensalt());
+        
+        String sql = """
+            UPDATE users
+            SET transaction_password = :password_hash,
+                updated_at = NOW()
+            WHERE id = :member_id
+            """;
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("member_id", memberId);
+        params.put("password_hash", passwordHash);
+        
+        return query(pool, sql, params)
+            .map(updateResult -> {
+                if (updateResult.rowCount() == 0) {
+                    throw new com.csms.common.exceptions.NotFoundException("Member not found");
+                }
+                return null;
+            });
+    }
+    
+    public Future<Void> adjustCoin(Long userId, String network, String token, Double amount, String type) {
+        // 지갑 잔액 조정
+        StringBuilder sql = new StringBuilder("""
+            UPDATE wallets w
+            SET balance = balance + :adjust_amount,
+                updated_at = NOW()
+            FROM currency c
+            WHERE w.currency_id = c.id
+            AND w.user_id = :user_id
+            """);
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("user_id", userId);
+        
+        // ADD면 양수, WITHDRAW면 음수
+        double adjustAmount = "ADD".equals(type) ? amount : -amount;
+        params.put("adjust_amount", adjustAmount);
+        
+        if (network != null && !network.isEmpty()) {
+            sql.append(" AND c.chain = :network");
+            params.put("network", network);
+        }
+        
+        if (token != null && !token.isEmpty()) {
+            sql.append(" AND c.code = :token");
+            params.put("token", token);
+        }
+        
+        return query(pool, sql.toString(), params)
+            .map(updateResult -> {
+                if (updateResult.rowCount() == 0) {
+                    throw new com.csms.common.exceptions.NotFoundException("Wallet not found");
+                }
+                return null;
+            });
+    }
+    
+    public Future<Void> adjustKoriPoint(Long userId, Double amount, String type) {
+        // KORI 포인트 조정 (users 테이블에 kori_points 필드가 있다고 가정)
+        StringBuilder sql = new StringBuilder("""
+            UPDATE users
+            SET kori_points = kori_points + :adjust_amount,
+                updated_at = NOW()
+            WHERE id = :user_id
+            """);
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("user_id", userId);
+        
+        // ADD면 양수, WITHDRAW면 음수
+        double adjustAmount = "ADD".equals(type) ? amount : -amount;
+        params.put("adjust_amount", adjustAmount);
+        
+        return query(pool, sql.toString(), params)
+            .map(updateResult -> {
+                if (updateResult.rowCount() == 0) {
+                    throw new com.csms.common.exceptions.NotFoundException("User not found");
+                }
+                return null;
+            });
+    }
+    
+    public Future<com.csms.admin.dto.WalletListDto> getMemberWallets(
+        Long memberId,
+        String network,
+        String token,
+        Integer limit,
+        Integer offset
+    ) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT 
+                w.id,
+                c.chain as network,
+                c.code as token,
+                w.address,
+                w.balance
+            FROM wallets w
+            JOIN currency c ON c.id = w.currency_id
+            WHERE w.user_id = :user_id
+            """);
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("user_id", memberId);
+        
+        if (network != null && !network.isEmpty()) {
+            sql.append(" AND c.chain = :network");
+            params.put("network", network);
+        }
+        
+        if (token != null && !token.isEmpty()) {
+            sql.append(" AND c.code = :token");
+            params.put("token", token);
+        }
+        
+        // COUNT 쿼리
+        String countSql = "SELECT COUNT(*) as total FROM (" + sql.toString() + ") as filtered";
+        
+        // 정렬 및 페이지네이션
+        sql.append(" ORDER BY c.chain, c.code");
+        sql.append(" LIMIT :limit OFFSET :offset");
+        params.put("limit", limit);
+        params.put("offset", offset);
+        
+        // COUNT 실행
+        return query(pool, countSql, params)
+            .compose(countRows -> {
+                Long total = 0L;
+                if (!countRows.isEmpty()) {
+                    total = getLong(countRows.iterator().next(), "total");
+                }
+                
+                // 실제 데이터 조회
+                return query(pool, sql.toString(), params)
+                    .map(rows -> {
+                        List<com.csms.admin.dto.WalletListDto.WalletInfo> wallets = new ArrayList<>();
+                        for (var row : rows) {
+                            wallets.add(com.csms.admin.dto.WalletListDto.WalletInfo.builder()
+                                .id(getLong(row, "id"))
+                                .network(getString(row, "network"))
+                                .token(getString(row, "token"))
+                                .address(getString(row, "address"))
+                                .balance(getDouble(row, "balance"))
+                                .build());
+                        }
+                        return com.csms.admin.dto.WalletListDto.builder()
+                            .wallets(wallets)
+                            .total(total)
+                            .limit(limit)
+                            .offset(offset)
+                            .build();
+                    });
+            });
+    }
 }
 
