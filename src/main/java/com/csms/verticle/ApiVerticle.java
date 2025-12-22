@@ -307,9 +307,13 @@ public class ApiVerticle extends AbstractVerticle {
         com.csms.admin.service.AdminMemberService adminMemberService = new com.csms.admin.service.AdminMemberService(
             serviceFactory.getPool()
         );
+        com.csms.admin.service.AdminMemberExportService adminMemberExportService = new com.csms.admin.service.AdminMemberExportService(
+            serviceFactory.getPool()
+        );
         com.csms.admin.handler.AdminMemberHandler adminMemberHandler = new com.csms.admin.handler.AdminMemberHandler(
             vertx,
-            adminMemberService
+            adminMemberService,
+            adminMemberExportService
         );
         mainRouter.mountSubRouter("/api/v1/admin/members", adminMemberHandler.getRouter());
         

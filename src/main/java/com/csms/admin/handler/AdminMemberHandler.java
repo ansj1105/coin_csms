@@ -4,22 +4,29 @@ import com.csms.admin.dto.MemberDetailDto;
 import com.csms.admin.dto.MemberListDto;
 import com.csms.admin.dto.SanctionRequestDto;
 import com.csms.admin.service.AdminMemberService;
+import com.csms.admin.service.AdminMemberExportService;
 import com.csms.common.handler.BaseHandler;
 import com.csms.common.utils.ErrorHandler;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 @Slf4j
 public class AdminMemberHandler extends BaseHandler {
     
     private final AdminMemberService service;
+    private final AdminMemberExportService exportService;
     
-    public AdminMemberHandler(Vertx vertx, AdminMemberService service) {
+    public AdminMemberHandler(Vertx vertx, AdminMemberService service, AdminMemberExportService exportService) {
         super(vertx);
         this.service = service;
+        this.exportService = exportService;
     }
     
     public Router getRouter() {
@@ -94,9 +101,32 @@ public class AdminMemberHandler extends BaseHandler {
     }
     
     private void exportMembers(RoutingContext ctx) {
-        // TODO: 엑셀/CSV 다운로드 구현
-        // Apache POI 또는 OpenCSV 사용
-        ctx.fail(501, new UnsupportedOperationException("Export feature not implemented yet"));
+        try {
+            String searchCategory = ctx.queryParams().get("searchCategory");
+            String searchKeyword = ctx.queryParams().get("searchKeyword");
+            String activityStatus = ctx.queryParams().get("activityStatus");
+            String sanctionStatus = ctx.queryParams().get("sanctionStatus");
+            
+            exportService.exportToExcel(searchCategory, searchKeyword, activityStatus, sanctionStatus)
+                .onSuccess(buffer -> {
+                    // 파일명 생성 (현재 날짜시간 포함)
+                    String fileName = "members_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
+                    
+                    ctx.response()
+                        .setStatusCode(200)
+                        .putHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                        .putHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+                        .putHeader("Content-Length", String.valueOf(buffer.length()))
+                        .end(buffer);
+                })
+                .onFailure(err -> {
+                    log.error("Failed to export members", err);
+                    ErrorHandler.handle(ctx);
+                });
+        } catch (Exception e) {
+            log.error("Error in exportMembers", e);
+            ErrorHandler.handle(ctx);
+        }
     }
     
     private Integer getQueryParamAsInteger(RoutingContext ctx, String param, Integer defaultValue) {

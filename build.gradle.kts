@@ -66,6 +66,10 @@ dependencies {
     // Vert.x Mail Client (SMTP)
     implementation("io.vertx:vertx-mail-client")
     
+    // Apache POI for Excel export
+    implementation("org.apache.poi:poi:5.2.5")
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
+    
     // PostgreSQL JDBC (Flyway용)
     implementation("org.postgresql:postgresql:$postgresqlVersion")
     
