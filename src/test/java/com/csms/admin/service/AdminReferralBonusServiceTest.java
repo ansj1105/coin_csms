@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.csms.common.TestArgumentMatchers.anySqlClient;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -41,7 +42,7 @@ class AdminReferralBonusServiceTest {
             .distributionRate(5)
             .build();
         
-        when(repository.getReferralBonus()).thenReturn(Future.succeededFuture(expectedResult));
+        when(repository.getReferralBonus(anySqlClient())).thenReturn(Future.succeededFuture(expectedResult));
         
         // When
         service.getReferralBonus()
@@ -51,7 +52,7 @@ class AdminReferralBonusServiceTest {
                     assertNotNull(result);
                     assertEquals(true, result.getIsEnabled());
                     assertEquals(5, result.getDistributionRate());
-                    verify(repository, times(1)).getReferralBonus();
+                    verify(repository, times(1)).getReferralBonus(anySqlClient());
                 });
                 context.completeNow();
             }));
@@ -65,7 +66,7 @@ class AdminReferralBonusServiceTest {
             .distributionRate(5)
             .build();
         
-        when(repository.updateReferralBonus(eq(true), eq(5)))
+        when(repository.updateReferralBonus(anySqlClient(), eq(true), eq(5)))
             .thenReturn(Future.succeededFuture());
         
         // When
@@ -73,7 +74,7 @@ class AdminReferralBonusServiceTest {
             .onComplete(context.succeeding(result -> {
                 // Then
                 context.verify(() -> {
-                    verify(repository, times(1)).updateReferralBonus(anyBoolean(), anyInt());
+                    verify(repository, times(1)).updateReferralBonus(anySqlClient(), anyBoolean(), anyInt());
                 });
                 context.completeNow();
             }));
@@ -93,7 +94,7 @@ class AdminReferralBonusServiceTest {
                 // Then
                 context.verify(() -> {
                     assertTrue(throwable instanceof IllegalArgumentException);
-                    verify(repository, never()).updateReferralBonus(anyBoolean(), anyInt());
+                    verify(repository, never()).updateReferralBonus(anySqlClient(), anyBoolean(), anyInt());
                 });
                 context.completeNow();
             }));

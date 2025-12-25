@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.csms.common.TestArgumentMatchers.anySqlClient;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -61,7 +62,7 @@ class AdminMiningConditionServiceTest {
             .levelLimitsEnabled(true)
             .build();
         
-        when(repository.getMiningConditions()).thenReturn(Future.succeededFuture(expectedResult));
+        when(repository.getMiningConditions(anySqlClient())).thenReturn(Future.succeededFuture(expectedResult));
         
         // When
         service.getMiningConditions()
@@ -71,7 +72,7 @@ class AdminMiningConditionServiceTest {
                     assertNotNull(result);
                     assertNotNull(result.getBasicConditions());
                     assertNotNull(result.getProgressSettings());
-                    verify(repository, times(1)).getMiningConditions();
+                    verify(repository, times(1)).getMiningConditions(anySqlClient());
                 });
                 context.completeNow();
             }));
@@ -87,7 +88,7 @@ class AdminMiningConditionServiceTest {
             .missions(new ArrayList<>())
             .build();
         
-        when(repository.updateBasicConditions(anyBoolean(), anyBoolean(), anyInt()))
+        when(repository.updateBasicConditions(anySqlClient(), anyBoolean(), anyBoolean(), anyInt()))
             .thenReturn(Future.succeededFuture());
         
         // When
@@ -95,7 +96,7 @@ class AdminMiningConditionServiceTest {
             .onComplete(context.succeeding(result -> {
                 // Then
                 context.verify(() -> {
-                    verify(repository, times(1)).updateBasicConditions(anyBoolean(), anyBoolean(), anyInt());
+                    verify(repository, times(1)).updateBasicConditions(anySqlClient(), anyBoolean(), anyBoolean(), anyInt());
                 });
                 context.completeNow();
             }));
@@ -115,7 +116,7 @@ class AdminMiningConditionServiceTest {
                 // Then
                 context.verify(() -> {
                     assertTrue(throwable instanceof IllegalArgumentException);
-                    verify(repository, never()).updateLevelLimit(anyInt(), anyDouble());
+                    verify(repository, never()).updateLevelLimit(anySqlClient(), anyInt(), anyDouble());
                 });
                 context.completeNow();
             }));

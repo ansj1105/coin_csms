@@ -7,6 +7,7 @@ import com.csms.common.database.RowMapper;
 import com.csms.common.repository.BaseRepository;
 import io.vertx.core.Future;
 import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.SqlClient;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,6 +25,7 @@ public class AdminMemberRepository extends BaseRepository {
     }
     
     public Future<MemberListDto> getMembers(
+        SqlClient client,
         Integer limit,
         Integer offset,
         String searchCategory,
@@ -150,7 +152,7 @@ public class AdminMemberRepository extends BaseRepository {
         params.put("offset", offset);
         
         // COUNT 실행
-        return query(pool, countSql, params)
+        return query(client, countSql, params)
             .compose(countRows -> {
                 Long total = 0L;
                 if (countRows.size() > 0) {
@@ -159,7 +161,7 @@ public class AdminMemberRepository extends BaseRepository {
                 final Long finalTotal = total != null ? total : 0L;
                 
                 // 실제 데이터 조회
-                return query(pool, sql.toString(), params)
+                return query(client, sql.toString(), params)
                     .map(rows -> {
                         List<MemberListDto.MemberInfo> members = new ArrayList<>();
                         for (var row : rows) {
@@ -190,7 +192,7 @@ public class AdminMemberRepository extends BaseRepository {
             });
     }
     
-    public Future<MemberDetailDto> getMemberDetail(Long memberId) {
+    public Future<MemberDetailDto> getMemberDetail(SqlClient client, Long memberId) {
         String sql = """
             SELECT 
                 u.id,
@@ -244,7 +246,7 @@ public class AdminMemberRepository extends BaseRepository {
         Map<String, Object> params = new HashMap<>();
         params.put("member_id", memberId);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .compose(rows -> {
                 if (rows.size() == 0) {
                     return Future.failedFuture(new com.csms.common.exceptions.NotFoundException("Member not found"));
@@ -269,7 +271,7 @@ public class AdminMemberRepository extends BaseRepository {
                 Map<String, Object> walletParams = new HashMap<>();
                 walletParams.put("user_id", memberId);
                 
-                return query(pool, walletSql, walletParams)
+                return query(client, walletSql, walletParams)
                     .map(walletRows -> {
                         List<MemberDetailDto.WalletInfo> wallets = new ArrayList<>();
                         for (var walletRow : walletRows) {
@@ -313,7 +315,7 @@ public class AdminMemberRepository extends BaseRepository {
             });
     }
     
-    public Future<Void> updateSanctionStatus(Long memberId, String sanctionStatus) {
+    public Future<Void> updateSanctionStatus(SqlClient client, Long memberId, String sanctionStatus) {
         String sql = """
             UPDATE users
             SET sanction_status = :sanction_status,
@@ -325,7 +327,7 @@ public class AdminMemberRepository extends BaseRepository {
         params.put("member_id", memberId);
         params.put("sanction_status", sanctionStatus);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .map(updateResult -> {
                 if (updateResult.rowCount() == 0) {
                     throw new com.csms.common.exceptions.NotFoundException("Member not found");
@@ -334,7 +336,7 @@ public class AdminMemberRepository extends BaseRepository {
             });
     }
     
-    public Future<Void> updateMember(Long memberId, String phone, String email, Integer level) {
+    public Future<Void> updateMember(SqlClient client, Long memberId, String phone, String email, Integer level) {
         StringBuilder sql = new StringBuilder("UPDATE users SET updated_at = NOW()");
         Map<String, Object> params = new HashMap<>();
         params.put("member_id", memberId);
@@ -354,7 +356,7 @@ public class AdminMemberRepository extends BaseRepository {
         
         sql.append(" WHERE id = :member_id");
         
-        return query(pool, sql.toString(), params)
+        return query(client, sql.toString(), params)
             .map(updateResult -> {
                 if (updateResult.rowCount() == 0) {
                     throw new com.csms.common.exceptions.NotFoundException("Member not found");
@@ -363,7 +365,7 @@ public class AdminMemberRepository extends BaseRepository {
             });
     }
     
-    public Future<Void> resetTransactionPassword(Long memberId) {
+    public Future<Void> resetTransactionPassword(SqlClient client, Long memberId) {
         // 거래 비밀번호를 "0000"으로 초기화
         // users 테이블에 transaction_password 필드가 있다고 가정
         // "0000"을 BCrypt로 해시화
@@ -380,7 +382,7 @@ public class AdminMemberRepository extends BaseRepository {
         params.put("member_id", memberId);
         params.put("password_hash", passwordHash);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .map(updateResult -> {
                 if (updateResult.rowCount() == 0) {
                     throw new com.csms.common.exceptions.NotFoundException("Member not found");
@@ -389,7 +391,7 @@ public class AdminMemberRepository extends BaseRepository {
             });
     }
     
-    public Future<Void> adjustCoin(Long userId, String network, String token, Double amount, String type) {
+    public Future<Void> adjustCoin(SqlClient client, Long userId, String network, String token, Double amount, String type) {
         // 지갑 잔액 조정
         StringBuilder sql = new StringBuilder("""
             UPDATE wallets w
@@ -417,7 +419,7 @@ public class AdminMemberRepository extends BaseRepository {
             params.put("token", token);
         }
         
-        return query(pool, sql.toString(), params)
+        return query(client, sql.toString(), params)
             .map(updateResult -> {
                 if (updateResult.rowCount() == 0) {
                     throw new com.csms.common.exceptions.NotFoundException("Wallet not found");
@@ -426,7 +428,7 @@ public class AdminMemberRepository extends BaseRepository {
             });
     }
     
-    public Future<Void> adjustKoriPoint(Long userId, Double amount, String type) {
+    public Future<Void> adjustKoriPoint(SqlClient client, Long userId, Double amount, String type) {
         // KORI 포인트 조정 (users 테이블에 kori_points 필드가 있다고 가정)
         StringBuilder sql = new StringBuilder("""
             UPDATE users
@@ -442,7 +444,7 @@ public class AdminMemberRepository extends BaseRepository {
         double adjustAmount = "ADD".equals(type) ? amount : -amount;
         params.put("adjust_amount", adjustAmount);
         
-        return query(pool, sql.toString(), params)
+        return query(client, sql.toString(), params)
             .map(updateResult -> {
                 if (updateResult.rowCount() == 0) {
                     throw new com.csms.common.exceptions.NotFoundException("User not found");
@@ -452,6 +454,7 @@ public class AdminMemberRepository extends BaseRepository {
     }
     
     public Future<com.csms.admin.dto.WalletListDto> getMemberWallets(
+        SqlClient client,
         Long memberId,
         String network,
         String token,
@@ -493,7 +496,7 @@ public class AdminMemberRepository extends BaseRepository {
         params.put("offset", offset);
         
         // COUNT 실행
-        return query(pool, countSql, params)
+        return query(client, countSql, params)
             .compose(countRows -> {
                 Long total = 0L;
                 if (countRows.size() > 0) {
@@ -502,7 +505,7 @@ public class AdminMemberRepository extends BaseRepository {
                 final Long finalTotal = total != null ? total : 0L;
                 
                 // 실제 데이터 조회
-                return query(pool, sql.toString(), params)
+                return query(client, sql.toString(), params)
                     .map(rows -> {
                         List<com.csms.admin.dto.WalletListDto.WalletInfo> wallets = new ArrayList<>();
                         for (var row : rows) {
@@ -562,6 +565,7 @@ public class AdminMemberRepository extends BaseRepository {
     };
     
     public Future<MiningHistoryDetailDto> getMiningHistory(
+        SqlClient client,
         Long userId,
         Integer limit,
         Integer offset,
@@ -581,7 +585,7 @@ public class AdminMemberRepository extends BaseRepository {
         Map<String, Object> userParams = new HashMap<>();
         userParams.put("user_id", userId);
         
-        return query(pool, userSql, userParams)
+        return query(client, userSql, userParams)
             .compose(userRows -> {
                 if (userRows.size() == 0) {
                     return Future.failedFuture(new com.csms.common.exceptions.NotFoundException("User not found"));
@@ -650,7 +654,7 @@ public class AdminMemberRepository extends BaseRepository {
                     countSql.append(" AND mh.created_at >= :start_date AND mh.created_at <= :end_date");
                 }
                 
-                return query(pool, countSql.toString(), params)
+                return query(client, countSql.toString(), params)
                     .compose(countRows -> {
                         Integer total = 0;
                         if (countRows.size() > 0) {
@@ -663,7 +667,7 @@ public class AdminMemberRepository extends BaseRepository {
                         params.put("limit", limit);
                         params.put("offset", offset);
                         
-                        return query(pool, sql.toString(), params)
+                        return query(client, sql.toString(), params)
                             .compose(rows -> {
                                 List<MiningHistoryDetailDto.MiningHistoryRecord> records = new ArrayList<>();
                                 for (var row : rows) {
@@ -671,7 +675,7 @@ public class AdminMemberRepository extends BaseRepository {
                                 }
                                 
                                 // 요약 통계 조회
-                                return getMiningHistorySummary(userId, startDate, endDate)
+                                return getMiningHistorySummary(client, userId, startDate, endDate)
                                     .map(summary -> MiningHistoryDetailDto.builder()
                                         .userId(userId)
                                         .userNickname(userNickname)
@@ -687,7 +691,7 @@ public class AdminMemberRepository extends BaseRepository {
             });
     }
     
-    private Future<MiningHistoryDetailDto.Summary> getMiningHistorySummary(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
+    private Future<MiningHistoryDetailDto.Summary> getMiningHistorySummary(SqlClient client, Long userId, LocalDateTime startDate, LocalDateTime endDate) {
         StringBuilder sql = new StringBuilder();
         Map<String, Object> params = new HashMap<>();
         
@@ -708,7 +712,7 @@ public class AdminMemberRepository extends BaseRepository {
             params.put("end_date", endDate);
         }
         
-        return query(pool, sql.toString(), params)
+        return query(client, sql.toString(), params)
             .map(rows -> {
                 if (rows.size() == 0) {
                     return MiningHistoryDetailDto.Summary.builder()

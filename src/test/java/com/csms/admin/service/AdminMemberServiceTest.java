@@ -21,37 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(VertxExtension.class)
 class AdminMemberServiceTest extends HandlerTestBase {
     
-    private static PgPool pool;
     private AdminMemberService service;
     
     public AdminMemberServiceTest() {
         super("/api/admin");
-    }
-    
-    @BeforeAll
-    static void setUpPool(Vertx vertx, VertxTestContext testContext) {
-        try {
-            // test용 config.json에서 test 환경 설정 로드
-            String configContent = vertx.fileSystem().readFileBlocking("src/test/resources/config.json").toString();
-            JsonObject fullConfig = new JsonObject(configContent);
-            JsonObject config = fullConfig.getJsonObject("test");
-            JsonObject dbConfig = HandlerTestBase.overrideDatabaseConfig(config.getJsonObject("database"));
-            
-            PgConnectOptions connectOptions = new PgConnectOptions()
-                .setHost(dbConfig.getString("host"))
-                .setPort(dbConfig.getInteger("port"))
-                .setDatabase(dbConfig.getString("database"))
-                .setUser(dbConfig.getString("user"))
-                .setPassword(dbConfig.getString("password"));
-            
-            PoolOptions poolOptions = new PoolOptions()
-                .setMaxSize(dbConfig.getInteger("pool_size", 5));
-            
-            pool = PgPool.pool(vertx, connectOptions, poolOptions);
-            testContext.completeNow();
-        } catch (Exception e) {
-            testContext.failNow(e);
-        }
     }
     
     @BeforeEach

@@ -18,6 +18,9 @@ import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.PoolOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
@@ -36,6 +39,7 @@ public class HandlerTestBase {
     protected static ObjectMapper objectMapper;
     protected static JWTAuth jwtAuth;
     protected static Flyway flyway;
+    protected static PgPool pool;
     
     protected final String apiUrl;
     
@@ -83,6 +87,19 @@ public class HandlerTestBase {
                 .setAlgorithm("HS256")
                 .setBuffer(jwtConfig.getString("secret"))));
         
+        // PgPool 설정
+        PgConnectOptions connectOptions = new PgConnectOptions()
+            .setHost(dbConfig.getString("host"))
+            .setPort(dbConfig.getInteger("port"))
+            .setDatabase(dbConfig.getString("database"))
+            .setUser(dbConfig.getString("user"))
+            .setPassword(dbConfig.getString("password"));
+        
+        PoolOptions poolOptions = new PoolOptions()
+            .setMaxSize(dbConfig.getInteger("pool_size", 5));
+        
+        pool = PgPool.pool(vertx, connectOptions, poolOptions);
+        
         testContext.verify(() -> {
             // Flyway 설정
             configureFlyway(flywayConfig);
@@ -111,6 +128,9 @@ public class HandlerTestBase {
     protected static void close(final Vertx vertx) {
         if (webClient != null) {
             webClient.close();
+        }
+        if (pool != null) {
+            pool.close();
         }
         vertx.close();
     }
@@ -224,11 +244,27 @@ public class HandlerTestBase {
         String dbUser = System.getProperty("test.db.user", System.getenv("TEST_DB_USER"));
         String dbPassword = System.getProperty("test.db.password", System.getenv("TEST_DB_PASSWORD"));
         
-        if (dbHost != null) dbConfig.put("host", dbHost);
-        if (dbPort != null) dbConfig.put("port", Integer.parseInt(dbPort));
-        if (dbName != null) dbConfig.put("database", dbName);
-        if (dbUser != null) dbConfig.put("user", dbUser);
-        if (dbPassword != null) dbConfig.put("password", dbPassword);
+        // null이 아니고 빈 문자열이 아닐 때만 설정을 오버라이드
+        if (dbHost != null && !dbHost.trim().isEmpty()) {
+            dbConfig.put("host", dbHost);
+        }
+        if (dbPort != null && !dbPort.trim().isEmpty()) {
+            try {
+                dbConfig.put("port", Integer.parseInt(dbPort.trim()));
+            } catch (NumberFormatException e) {
+                // 포트 번호가 올바르지 않으면 기본값 유지
+                log.warn("Invalid port number in test.db.port: {}, using default", dbPort);
+            }
+        }
+        if (dbName != null && !dbName.trim().isEmpty()) {
+            dbConfig.put("database", dbName);
+        }
+        if (dbUser != null && !dbUser.trim().isEmpty()) {
+            dbConfig.put("user", dbUser);
+        }
+        if (dbPassword != null && !dbPassword.trim().isEmpty()) {
+            dbConfig.put("password", dbPassword);
+        }
         
         return dbConfig;
     }

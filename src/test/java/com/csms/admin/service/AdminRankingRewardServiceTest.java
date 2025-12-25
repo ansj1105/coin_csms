@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.csms.common.TestArgumentMatchers.anySqlClient;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -51,7 +52,7 @@ class AdminRankingRewardServiceTest {
                 .build())
             .build();
         
-        when(repository.getRankingReward()).thenReturn(Future.succeededFuture(expectedResult));
+        when(repository.getRankingReward(anySqlClient())).thenReturn(Future.succeededFuture(expectedResult));
         
         // When
         service.getRankingReward()
@@ -61,7 +62,7 @@ class AdminRankingRewardServiceTest {
                     assertNotNull(result);
                     assertNotNull(result.getRegional());
                     assertNotNull(result.getNational());
-                    verify(repository, times(1)).getRankingReward();
+                    verify(repository, times(1)).getRankingReward(anySqlClient());
                 });
                 context.completeNow();
             }));
@@ -79,6 +80,7 @@ class AdminRankingRewardServiceTest {
             .build();
         
         when(repository.updateRankingReward(
+            anySqlClient(),
             eq("REGIONAL"),
             eq(10.00),
             eq(5.00),
@@ -91,7 +93,7 @@ class AdminRankingRewardServiceTest {
             .onComplete(context.succeeding(result -> {
                 // Then
                 context.verify(() -> {
-                    verify(repository, times(1)).updateRankingReward(anyString(), anyDouble(), anyDouble(), anyDouble(), anyDouble());
+                    verify(repository, times(1)).updateRankingReward(anySqlClient(), anyString(), anyDouble(), anyDouble(), anyDouble(), anyDouble());
                 });
                 context.completeNow();
             }));
@@ -111,7 +113,7 @@ class AdminRankingRewardServiceTest {
                 // Then
                 context.verify(() -> {
                     assertTrue(throwable instanceof IllegalArgumentException);
-                    verify(repository, never()).updateRankingReward(anyString(), any(), any(), any(), any());
+                    verify(repository, never()).updateRankingReward(anySqlClient(), anyString(), any(), any(), any(), any());
                 });
                 context.completeNow();
             }));
@@ -131,7 +133,7 @@ class AdminRankingRewardServiceTest {
                 // Then
                 context.verify(() -> {
                     assertTrue(throwable instanceof IllegalArgumentException);
-                    verify(repository, never()).updateRankingReward(anyString(), any(), any(), any(), any());
+                    verify(repository, never()).updateRankingReward(anySqlClient(), anyString(), any(), any(), any(), any());
                 });
                 context.completeNow();
             }));
@@ -151,7 +153,7 @@ class AdminRankingRewardServiceTest {
                 // Then
                 context.verify(() -> {
                     assertTrue(throwable instanceof IllegalArgumentException);
-                    verify(repository, never()).updateRankingReward(anyString(), any(), any(), any(), any());
+                    verify(repository, never()).updateRankingReward(anySqlClient(), anyString(), any(), any(), any(), any());
                 });
                 context.completeNow();
             }));

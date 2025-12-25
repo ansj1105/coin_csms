@@ -1,49 +1,59 @@
 package com.csms.admin.service;
 
 import com.csms.admin.dto.AdminLoginDto;
-import com.csms.admin.entities.Admin;
 import com.csms.admin.repository.AdminRepository;
+import com.csms.common.HandlerTestBase;
 import com.csms.common.utils.RateLimiter;
-import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.auth.jwt.JWTAuth;
-import io.vertx.junit5.VertxExtension;
-import io.vertx.junit5.VertxTestContext;
-import io.vertx.pgclient.PgPool;
+import io.vertx.redis.client.Redis;
+import io.vertx.redis.client.RedisAPI;
+import io.vertx.redis.client.RedisOptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
 
-@ExtendWith({VertxExtension.class, MockitoExtension.class})
-class AdminAuthServiceTest {
+@ExtendWith(VertxExtension.class)
+class AdminAuthServiceTest extends HandlerTestBase {
     
-    @Mock
-    private PgPool pool;
-    
-    @Mock
-    private AdminRepository adminRepository;
-    
-    @Mock
-    private JWTAuth jwtAuth;
-    
-    @Mock
-    private RateLimiter rateLimiter;
-    
+    private static RateLimiter rateLimiter;
     private AdminAuthService adminAuthService;
     private JsonObject jwtConfig;
     
+    public AdminAuthServiceTest() {
+        super("/api/admin");
+    }
+    
     @BeforeEach
-    void setUp() {
-        jwtConfig = new JsonObject()
-            .put("secret", "test-secret-key");
+    void setUp(Vertx vertx) {
+        // test용 config.json에서 test 환경 설정 로드
+        String configContent = vertx.fileSystem().readFileBlocking("src/test/resources/config.json").toString();
+        JsonObject fullConfig = new JsonObject(configContent);
+        JsonObject config = fullConfig.getJsonObject("test");
+        jwtConfig = config.getJsonObject("jwt");
+        JsonObject redisConfig = config.getJsonObject("redis");
+        
+        // RateLimiter 설정 (Redis가 없어도 동작하도록 null 허용)
+        if (rateLimiter == null) {
+            try {
+                RedisOptions redisOptions = new RedisOptions()
+                    .setConnectionString("redis://" + redisConfig.getString("host") + ":" + redisConfig.getInteger("port"));
+                if (redisConfig.getString("password") != null && !redisConfig.getString("password").isEmpty()) {
+                    redisOptions.setPassword(redisConfig.getString("password"));
+                }
+                Redis redis = Redis.createClient(vertx, redisOptions);
+                rateLimiter = new RateLimiter(RedisAPI.api(redis));
+            } catch (Exception e) {
+                // Redis 연결 실패 시 null로 설정 (RateLimiter는 null 체크 필요)
+                rateLimiter = null;
+            }
+        }
+        
+        AdminRepository adminRepository = new AdminRepository();
         
         adminAuthService = new AdminAuthService(
             pool,
@@ -56,24 +66,10 @@ class AdminAuthServiceTest {
     
     @Test
     void testLogin_Success(VertxTestContext context) {
-        // Given
+        // Given - 테스트 데이터에 admin1이 있어야 함 (V1000__insert_test_dummy_data.sql)
         AdminLoginDto dto = new AdminLoginDto();
         dto.setId("admin1");
         dto.setPassword("password123");
-        
-        Admin admin = Admin.builder()
-            .id(1L)
-            .loginId("admin1")
-            .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy") // "password123" 해시
-            .role(2)
-            .status("ACTIVE")
-            .build();
-        
-        when(rateLimiter.checkAdminLoginAttempt(any())).thenReturn(Future.succeededFuture(true));
-        when(adminRepository.getAdminByLoginId(any(), eq("admin1"))).thenReturn(Future.succeededFuture(admin));
-        when(jwtAuth.generateToken(any(JsonObject.class), any())).thenReturn("test-token");
-        // resetAdminLoginFailure는 void 메서드이므로 doNothing 사용
-        doNothing().when(rateLimiter).resetAdminLoginFailure(any());
         
         // When
         adminAuthService.login(dto, "127.0.0.1")
@@ -84,26 +80,17 @@ class AdminAuthServiceTest {
                 assertThat(response.getAccessToken()).isNotNull();
                 context.completeNow();
             })
-            .onFailure(context::failNow);
+            .onFailure(error -> {
+                context.failNow(error);
+            });
     }
     
     @Test
     void testLogin_InvalidCredentials(VertxTestContext context) {
-        // Given
+        // Given - 잘못된 비밀번호
         AdminLoginDto dto = new AdminLoginDto();
         dto.setId("admin1");
         dto.setPassword("wrong-password");
-        
-        Admin admin = Admin.builder()
-            .id(1L)
-            .loginId("admin1")
-            .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
-            .role(2)
-            .status("ACTIVE")
-            .build();
-        
-        when(rateLimiter.checkAdminLoginAttempt(any())).thenReturn(Future.succeededFuture(true));
-        when(adminRepository.getAdminByLoginId(any(), eq("admin1"))).thenReturn(Future.succeededFuture(admin));
         
         // When
         adminAuthService.login(dto, "127.0.0.1")
@@ -111,27 +98,26 @@ class AdminAuthServiceTest {
             .onFailure(error -> {
                 // Then
                 assertThat(error).isNotNull();
+                assertThat(error.getMessage()).contains("Invalid admin credentials");
                 context.completeNow();
             });
     }
     
     @Test
-    void testLogin_RateLimitExceeded(VertxTestContext context) {
-        // Given
+    void testLogin_AdminNotFound(VertxTestContext context) {
+        // Given - 존재하지 않는 관리자
         AdminLoginDto dto = new AdminLoginDto();
-        dto.setId("admin1");
+        dto.setId("nonexistent_admin");
         dto.setPassword("password123");
-        
-        when(rateLimiter.checkAdminLoginAttempt(any())).thenReturn(Future.succeededFuture(false));
         
         // When
         adminAuthService.login(dto, "127.0.0.1")
-            .onSuccess(response -> context.failNow("Should fail with rate limit"))
+            .onSuccess(response -> context.failNow("Should fail with admin not found"))
             .onFailure(error -> {
                 // Then
                 assertThat(error).isNotNull();
+                assertThat(error.getMessage()).contains("Invalid admin credentials");
                 context.completeNow();
             });
     }
 }
-

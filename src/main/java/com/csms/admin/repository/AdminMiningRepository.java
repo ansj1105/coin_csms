@@ -5,6 +5,7 @@ import com.csms.common.database.RowMapper;
 import com.csms.common.repository.BaseRepository;
 import io.vertx.core.Future;
 import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.SqlClient;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class AdminMiningRepository extends BaseRepository {
         .build();
     
     public Future<MiningRecordListDto> getMiningRecords(
+        SqlClient client,
         Integer limit,
         Integer offset,
         LocalDateTime startDate,
@@ -160,7 +162,7 @@ public class AdminMiningRepository extends BaseRepository {
         
         Map<String, Object> countParams = new HashMap<>(params);
         
-        return query(pool, countSql.toString(), countParams)
+        return query(client, countSql.toString(), countParams)
             .compose(countRows -> {
                 Integer totalValue = fetchOne(row -> getInteger(row, "total"), countRows);
                 final Integer total = totalValue != null ? totalValue : 0;
@@ -170,7 +172,7 @@ public class AdminMiningRepository extends BaseRepository {
                 params.put("limit", limit);
                 params.put("offset", offset);
                 
-                return query(pool, sql.toString(), params)
+                return query(client, sql.toString(), params)
                     .map(rows -> {
                         List<MiningRecordDto> records = new ArrayList<>();
                         for (var row : rows) {
@@ -191,7 +193,7 @@ public class AdminMiningRepository extends BaseRepository {
     
     // ========== Mining Condition 관련 메서드 ==========
     
-    public Future<MiningConditionDto> getMiningConditions() {
+    public Future<MiningConditionDto> getMiningConditions(SqlClient client) {
         String basicSql = """
             SELECT 
                 is_enabled,
@@ -239,7 +241,7 @@ public class AdminMiningRepository extends BaseRepository {
             LIMIT 1
             """;
         
-        return query(pool, basicSql, new HashMap<>())
+        return query(client, basicSql, new HashMap<>())
             .compose(basicRows -> {
                 MiningConditionDto.BasicConditions basicConditions = null;
                 if (basicRows.size() > 0) {
@@ -261,7 +263,7 @@ public class AdminMiningRepository extends BaseRepository {
                 
                 final MiningConditionDto.BasicConditions finalBasicConditions = basicConditions;
                 
-                return query(pool, missionSql, new HashMap<>())
+                return query(client, missionSql, new HashMap<>())
                     .compose(missionRows -> {
                         List<MiningConditionDto.Mission> missions = new ArrayList<>();
                         for (var row : missionRows) {
@@ -307,7 +309,7 @@ public class AdminMiningRepository extends BaseRepository {
                         
                         finalBasicConditions.setMissions(missions);
                         
-                        return query(pool, progressSql, new HashMap<>())
+                        return query(client, progressSql, new HashMap<>())
                             .compose(progressRows -> {
                                 MiningConditionDto.BroadcastSetting broadcastProgress = null;
                                 MiningConditionDto.BroadcastSetting broadcastListening = null;
@@ -350,7 +352,7 @@ public class AdminMiningRepository extends BaseRepository {
                                         .broadcastListening(broadcastListening)
                                         .build();
                                 
-                                return query(pool, levelLimitSql, new HashMap<>())
+                                return query(client, levelLimitSql, new HashMap<>())
                                     .compose(levelLimitRows -> {
                                         List<MiningConditionDto.LevelLimit> levelLimits = new ArrayList<>();
                                         for (var row : levelLimitRows) {
@@ -360,7 +362,7 @@ public class AdminMiningRepository extends BaseRepository {
                                                 .build());
                                         }
                                         
-                                        return query(pool, levelLimitEnabledSql, new HashMap<>())
+                                        return query(client, levelLimitEnabledSql, new HashMap<>())
                                             .map(enabledRows -> {
                                                 Boolean levelLimitsEnabled = true;
                                                 if (enabledRows.size() > 0) {
@@ -384,7 +386,7 @@ public class AdminMiningRepository extends BaseRepository {
             });
     }
     
-    public Future<Void> updateBasicConditions(
+    public Future<Void> updateBasicConditions(SqlClient client,
         Boolean isEnabled,
         Boolean baseTimeEnabled,
         Integer baseTimeMinutes
@@ -405,14 +407,14 @@ public class AdminMiningRepository extends BaseRepository {
         params.put("base_time_enabled", baseTimeEnabled);
         params.put("base_time_minutes", baseTimeMinutes);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .compose(rows -> succeededVoid())
             .onFailure(throwable -> {
                 throw new com.csms.common.exceptions.InternalServerException("Failed to update basic conditions", throwable);
             });
     }
     
-    public Future<Void> updateMission(String type, Integer requiredCount, Boolean isEnabled) {
+    public Future<Void> updateMission(SqlClient client, String type, Integer requiredCount, Boolean isEnabled) {
         String sql = """
             INSERT INTO mining_missions (type, required_count, is_enabled, updated_at)
             VALUES (:type, :required_count, :is_enabled, NOW())
@@ -428,14 +430,14 @@ public class AdminMiningRepository extends BaseRepository {
         params.put("required_count", requiredCount);
         params.put("is_enabled", isEnabled);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .compose(rows -> succeededVoid())
             .onFailure(throwable -> {
                 throw new com.csms.common.exceptions.InternalServerException("Failed to update mission - type: " + type, throwable);
             });
     }
     
-    public Future<Void> updateProgressSetting(
+    public Future<Void> updateProgressSetting(SqlClient client,
         String settingKey,
         Boolean isEnabled,
         Integer timePerHour,
@@ -458,14 +460,14 @@ public class AdminMiningRepository extends BaseRepository {
         params.put("time_per_hour", timePerHour);
         params.put("coins_per_hour", coinsPerHour);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .compose(rows -> succeededVoid())
             .onFailure(throwable -> {
                 throw new com.csms.common.exceptions.InternalServerException("Failed to update progress setting - key: " + settingKey, throwable);
             });
     }
     
-    public Future<Void> updateLevelLimit(Integer level, Double dailyLimit) {
+    public Future<Void> updateLevelLimit(SqlClient client, Integer level, Double dailyLimit) {
         String sql = """
             INSERT INTO mining_level_limits (level, daily_limit, updated_at)
             VALUES (:level, :daily_limit, NOW())
@@ -479,14 +481,14 @@ public class AdminMiningRepository extends BaseRepository {
         params.put("level", level);
         params.put("daily_limit", dailyLimit);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .compose(rows -> succeededVoid())
             .onFailure(throwable -> {
                 throw new com.csms.common.exceptions.InternalServerException("Failed to update level limit - level: " + level, throwable);
             });
     }
     
-    public Future<Void> updateLevelLimitsEnabled(Boolean enabled) {
+    public Future<Void> updateLevelLimitsEnabled(SqlClient client, Boolean enabled) {
         String sql = """
             INSERT INTO mining_settings (setting_type, is_enabled, updated_at)
             VALUES ('LEVEL_LIMIT', :is_enabled, NOW())
@@ -499,7 +501,7 @@ public class AdminMiningRepository extends BaseRepository {
         Map<String, Object> params = new HashMap<>();
         params.put("is_enabled", enabled);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .compose(rows -> succeededVoid())
             .onFailure(throwable -> {
                 throw new com.csms.common.exceptions.InternalServerException("Failed to update level limits enabled", throwable);
@@ -531,7 +533,7 @@ public class AdminMiningRepository extends BaseRepository {
             .build();
     };
     
-    public Future<MiningBoosterDto> getMiningBoosters() {
+    public Future<MiningBoosterDto> getMiningBoosters(SqlClient client) {
         String sql = """
             SELECT 
                 type,
@@ -545,7 +547,7 @@ public class AdminMiningRepository extends BaseRepository {
             ORDER BY type
             """;
         
-        return query(pool, sql, new HashMap<>())
+        return query(client, sql, new HashMap<>())
             .map(rows -> {
                 List<MiningBoosterDto.Booster> boosters = new ArrayList<>();
                 Integer totalEfficiency = 0;
@@ -656,7 +658,7 @@ public class AdminMiningRepository extends BaseRepository {
             .sum();
     }
     
-    public Future<Void> updateBooster(
+    public Future<Void> updateBooster(SqlClient client,
         String type,
         Boolean isEnabled,
         Integer efficiency,
@@ -687,7 +689,7 @@ public class AdminMiningRepository extends BaseRepository {
         params.put("max_count", maxCount);
         params.put("per_unit_efficiency", perUnitEfficiency);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .compose(rows -> succeededVoid())
             .onFailure(throwable -> {
                 throw new com.csms.common.exceptions.InternalServerException("Failed to update booster - type: " + type, throwable);
@@ -696,7 +698,7 @@ public class AdminMiningRepository extends BaseRepository {
     
     // ========== Referral Bonus 관련 메서드 ==========
     
-    public Future<ReferralBonusDto> getReferralBonus() {
+    public Future<ReferralBonusDto> getReferralBonus(SqlClient client) {
         String sql = """
             SELECT 
                 is_enabled,
@@ -705,7 +707,7 @@ public class AdminMiningRepository extends BaseRepository {
             LIMIT 1
             """;
         
-        return query(pool, sql, new HashMap<>())
+        return query(client, sql, new HashMap<>())
             .map(rows -> {
                 if (rows.size() > 0) {
                     var row = rows.iterator().next();
@@ -725,7 +727,7 @@ public class AdminMiningRepository extends BaseRepository {
             });
     }
     
-    public Future<Void> updateReferralBonus(Boolean isEnabled, Integer distributionRate) {
+    public Future<Void> updateReferralBonus(SqlClient client, Boolean isEnabled, Integer distributionRate) {
         String sql = """
             INSERT INTO referral_bonus_settings (is_enabled, distribution_rate, updated_at)
             VALUES (:is_enabled, :distribution_rate, NOW())
@@ -740,7 +742,7 @@ public class AdminMiningRepository extends BaseRepository {
         params.put("is_enabled", isEnabled);
         params.put("distribution_rate", distributionRate);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .compose(rows -> succeededVoid())
             .onFailure(throwable -> {
                 throw new com.csms.common.exceptions.InternalServerException("Failed to update referral bonus", throwable);
@@ -749,7 +751,7 @@ public class AdminMiningRepository extends BaseRepository {
     
     // ========== Ranking Reward 관련 메서드 ==========
     
-    public Future<RankingRewardDto> getRankingReward() {
+    public Future<RankingRewardDto> getRankingReward(SqlClient client) {
         String sql = """
             SELECT 
                 type,
@@ -761,7 +763,7 @@ public class AdminMiningRepository extends BaseRepository {
             ORDER BY type
             """;
         
-        return query(pool, sql, new HashMap<>())
+        return query(client, sql, new HashMap<>())
             .map(rows -> {
                 RankingRewardDto.RegionalReward regional = null;
                 RankingRewardDto.NationalReward national = null;
@@ -817,7 +819,7 @@ public class AdminMiningRepository extends BaseRepository {
             });
     }
     
-    public Future<Void> updateRankingReward(
+    public Future<Void> updateRankingReward(SqlClient client,
         String type,
         Double rank1,
         Double rank2,
@@ -843,7 +845,7 @@ public class AdminMiningRepository extends BaseRepository {
         params.put("rank3", rank3);
         params.put("rank4to10", rank4to10);
         
-        return query(pool, sql, params)
+        return query(client, sql, params)
             .compose(rows -> succeededVoid())
             .onFailure(throwable -> {
                 throw new com.csms.common.exceptions.InternalServerException("Failed to update ranking reward - type: " + type, throwable);
@@ -874,7 +876,7 @@ public class AdminMiningRepository extends BaseRepository {
             .build();
     };
     
-    public Future<MiningHistoryListDto> getMiningHistoryList(
+    public Future<MiningHistoryListDto> getMiningHistoryList(SqlClient client,
         Integer limit,
         Integer offset,
         String searchCategory,
@@ -1029,7 +1031,7 @@ public class AdminMiningRepository extends BaseRepository {
             countSql.append(" AND u.sanction_status = :sanction_status");
         }
         
-        return query(pool, countSql.toString(), params)
+        return query(client, countSql.toString(), params)
             .compose(countRows -> {
                 Integer total = 0;
                 if (countRows.size() > 0) {
@@ -1041,7 +1043,7 @@ public class AdminMiningRepository extends BaseRepository {
                 params.put("limit", limit);
                 params.put("offset", offset);
                 
-                return query(pool, sql.toString(), params)
+                return query(client, sql.toString(), params)
                     .map(rows -> {
                         List<MiningHistoryListDto.MiningHistoryItem> items = new ArrayList<>();
                         for (var row : rows) {
