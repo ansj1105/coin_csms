@@ -60,6 +60,7 @@ config-prod.json
 # Docker volumes data (local development)
 postgres-data/
 redis-data/
+redis-cluster/node-*/
 
 # Test reports (optional, can be regenerated)
 test-output/

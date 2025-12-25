@@ -48,6 +48,85 @@ com.csms/
 4. **테스트 용이성**: 의존성 주입을 통한 테스트 용이성 향상
 5. **확장성**: 새로운 도메인 추가 시 일관된 구조 유지
 
+## 로컬 개발 환경 설정
+
+### 사전 요구사항
+
+- **Docker Desktop**: Redis Cluster 실행을 위해 필요
+  - 다운로드: https://www.docker.com/products/docker-desktop
+  - 설치 가이드: [docs/DOCKER_INSTALLATION_WINDOWS.md](docs/DOCKER_INSTALLATION_WINDOWS.md)
+  - 설치 후 Docker Desktop을 실행해야 합니다 (시스템 트레이에 고래 아이콘 확인)
+
+### Redis Cluster 설정
+
+프로젝트는 Redis Cluster 모드를 사용합니다. 로컬 테스트를 위해 Redis Cluster를 시작해야 합니다.
+
+#### Windows
+
+**PowerShell 사용 (권장):**
+
+```powershell
+# Redis Cluster 시작
+.\scripts\start-redis-cluster.ps1
+
+# 데이터 정리 후 시작
+.\scripts\start-redis-cluster.ps1 --clean
+
+# Redis Cluster 중지
+.\scripts\stop-redis-cluster.ps1
+```
+
+**CMD 또는 배치 파일 사용:**
+
+```cmd
+# Redis Cluster 시작
+scripts\start-redis-cluster.bat
+
+# 데이터 정리 후 시작
+scripts\start-redis-cluster.bat --clean
+
+# Redis Cluster 중지
+scripts\stop-redis-cluster.bat
+```
+
+#### Linux/Mac
+
+```bash
+# 실행 권한 부여 (최초 1회)
+chmod +x scripts/start-redis-cluster.sh
+chmod +x scripts/stop-redis-cluster.sh
+
+# Redis Cluster 시작
+./scripts/start-redis-cluster.sh
+
+# 데이터 정리 후 시작
+./scripts/start-redis-cluster.sh --clean
+
+# Redis Cluster 중지
+./scripts/stop-redis-cluster.sh
+```
+
+#### Docker Compose 직접 사용
+
+```bash
+# 클러스터 시작
+docker-compose -f docker-compose.cluster.yml up -d
+
+# 클러스터 중지
+docker-compose -f docker-compose.cluster.yml down
+```
+
+자세한 내용은 [redis-cluster/README.md](redis-cluster/README.md)를 참고하세요.
+
+### 설정 파일
+
+- `src/main/resources/config.json`: 메인 설정 파일
+- `src/test/resources/config.json`: 테스트 환경 설정 파일
+
+Redis 클러스터 모드 사용 시 `config.json`의 `redis` 섹션에서 `mode: "cluster"`와 노드 목록을 설정해야 합니다.
+
+**참고**: Redis Cluster가 시작되지 않아도 애플리케이션은 시작되지만, Rate Limiting 기능이 비활성화됩니다.
+
 ## 빌드 및 실행
 
 ```bash

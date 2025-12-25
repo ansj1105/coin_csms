@@ -1,6 +1,7 @@
 package com.csms.verticle;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -44,18 +45,26 @@ public class EventVerticle extends AbstractVerticle {
         subscriberClient = Redis.createClient(vertx, subscriberOptions);
         
         redisClient.connect()
-            .onSuccess(conn -> {
+            .map(conn -> {
                 log.info("Redis connected successfully (mode: {})", mode);
                 redisApi = RedisAPI.api(conn);
                 
                 // 이벤트 구독 시작
                 subscribeToEvents();
                 
-                startPromise.complete();
+                return (Void) null;
             })
-            .onFailure(throwable -> {
-                log.error("Failed to connect to Redis", throwable);
-                startPromise.fail(throwable);
+            .recover(err -> {
+                log.warn("Failed to connect to Redis for EventVerticle, continuing without event pub/sub", err);
+                // Redis 연결 실패해도 서버는 시작 (이벤트 기능만 비활성화)
+                return Future.<Void>succeededFuture();
+            })
+            .onComplete(result -> {
+                if (result.succeeded()) {
+                    startPromise.complete();
+                } else {
+                    startPromise.fail(result.cause());
+                }
             });
     }
     
