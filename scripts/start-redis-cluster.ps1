@@ -49,6 +49,11 @@ try {
     }
 }
 
+# Get script directory and project root
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent $scriptDir
+Set-Location $projectRoot
+
 # Clean existing cluster data (optional)
 if ($args[0] -eq "--clean") {
     Write-Host "Cleaning up existing cluster data..." -ForegroundColor Yellow

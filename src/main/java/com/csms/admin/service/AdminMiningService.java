@@ -407,7 +407,7 @@ public class AdminMiningService extends BaseService {
         LocalDateTime endDateTime = range.endDate().atTime(23, 59, 59);
         
         // 모든 데이터 조회 (페이지네이션 없이)
-        return repository.getMiningRecords(pool,
+        return repository.getMiningRecords(client,
             Integer.MAX_VALUE,
             0,
             startDateTime,

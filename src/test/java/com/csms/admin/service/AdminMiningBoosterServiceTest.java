@@ -100,12 +100,12 @@ class AdminMiningBoosterServiceTest {
             .perUnitEfficiency(5)
             .build();
         
-        // 복합 부스터의 경우 efficiency = maxCount * perUnitEfficiency = 25
+        // 복합 부스터의 경우 efficiency는 service에서 null로 전달되고, repository에서 계산됨
         when(repository.updateBooster(
             anySqlClient(),
             eq("AD_VIEW"),
             eq(true),
-            eq(25), // 자동 계산된 값
+            isNull(), // service는 request.getEfficiency()를 그대로 전달 (null이면 repository에서 계산)
             eq(5),
             eq(5)
         )).thenReturn(Future.succeededFuture());

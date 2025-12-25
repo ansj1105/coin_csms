@@ -5,6 +5,11 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
+# Get script directory and project root
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent $scriptDir
+Set-Location $projectRoot
+
 Write-Host "Stopping Redis Cluster..." -ForegroundColor Yellow
 
 # Check Docker Compose command (docker compose or docker-compose)
