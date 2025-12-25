@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.csms.common.TestArgumentMatchers.anySqlClient;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -42,6 +43,7 @@ class AdminMiningServiceTest {
             .build();
         
         when(repository.getMiningRecords(
+            anySqlClient(),
             eq(20),
             eq(0),
             any(),
@@ -59,7 +61,7 @@ class AdminMiningServiceTest {
                     assertNotNull(result);
                     assertEquals(20, result.getLimit());
                     assertEquals(0, result.getOffset());
-                    verify(repository, times(1)).getMiningRecords(anyInt(), anyInt(), any(), any(), anyString(), any(), anyString());
+                    verify(repository, times(1)).getMiningRecords(anySqlClient(), anyInt(), anyInt(), any(), any(), anyString(), any(), anyString());
                 });
                 context.completeNow();
             }));
@@ -75,6 +77,7 @@ class AdminMiningServiceTest {
             .build();
         
         when(repository.getMiningRecords(
+            anySqlClient(),
             eq(30),
             eq(0),
             any(),
@@ -91,7 +94,7 @@ class AdminMiningServiceTest {
                 context.verify(() -> {
                     assertNotNull(result);
                     assertEquals(30, result.getLimit());
-                    verify(repository, times(1)).getMiningRecords(anyInt(), anyInt(), any(), any(), anyString(), anyString(), anyString());
+                    verify(repository, times(1)).getMiningRecords(anySqlClient(), anyInt(), anyInt(), any(), any(), anyString(), anyString(), anyString());
                 });
                 context.completeNow();
             }));
@@ -108,6 +111,7 @@ class AdminMiningServiceTest {
             .build();
         
         when(repository.getMiningRecords(
+            anySqlClient(),
             eq(20),
             eq(0),
             any(),
@@ -123,7 +127,7 @@ class AdminMiningServiceTest {
                 // Then
                 context.verify(() -> {
                     assertNotNull(result);
-                    verify(repository, times(1)).getMiningRecords(anyInt(), anyInt(), any(), any(), anyString(), eq("a".repeat(20)), anyString());
+                    verify(repository, times(1)).getMiningRecords(anySqlClient(), anyInt(), anyInt(), any(), any(), anyString(), eq("a".repeat(20)), anyString());
                 });
                 context.completeNow();
             }));

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.csms.common.TestArgumentMatchers.anySqlClient;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -44,7 +45,7 @@ class AdminMiningBoosterServiceTest {
                 .build())
             .build();
         
-        when(repository.getMiningBoosters()).thenReturn(Future.succeededFuture(expectedResult));
+        when(repository.getMiningBoosters(anySqlClient())).thenReturn(Future.succeededFuture(expectedResult));
         
         // When
         service.getMiningBoosters()
@@ -54,7 +55,7 @@ class AdminMiningBoosterServiceTest {
                     assertNotNull(result);
                     assertNotNull(result.getBoosters());
                     assertNotNull(result.getSummary());
-                    verify(repository, times(1)).getMiningBoosters();
+                    verify(repository, times(1)).getMiningBoosters(anySqlClient());
                 });
                 context.completeNow();
             }));
@@ -70,6 +71,7 @@ class AdminMiningBoosterServiceTest {
             .build();
         
         when(repository.updateBooster(
+            anySqlClient(),
             eq("SOCIAL_LINK"),
             eq(true),
             eq(5),
@@ -82,7 +84,7 @@ class AdminMiningBoosterServiceTest {
             .onComplete(context.succeeding(result -> {
                 // Then
                 context.verify(() -> {
-                    verify(repository, times(1)).updateBooster(anyString(), anyBoolean(), anyInt(), any(), any());
+                    verify(repository, times(1)).updateBooster(anySqlClient(), anyString(), anyBoolean(), anyInt(), any(), any());
                 });
                 context.completeNow();
             }));
@@ -100,6 +102,7 @@ class AdminMiningBoosterServiceTest {
         
         // 복합 부스터의 경우 efficiency = maxCount * perUnitEfficiency = 25
         when(repository.updateBooster(
+            anySqlClient(),
             eq("AD_VIEW"),
             eq(true),
             eq(25), // 자동 계산된 값
@@ -112,7 +115,7 @@ class AdminMiningBoosterServiceTest {
             .onComplete(context.succeeding(result -> {
                 // Then
                 context.verify(() -> {
-                    verify(repository, times(1)).updateBooster(anyString(), anyBoolean(), anyInt(), anyInt(), anyInt());
+                    verify(repository, times(1)).updateBooster(anySqlClient(), anyString(), anyBoolean(), anyInt(), anyInt(), anyInt());
                 });
                 context.completeNow();
             }));
@@ -133,7 +136,7 @@ class AdminMiningBoosterServiceTest {
                 // Then
                 context.verify(() -> {
                     assertTrue(throwable instanceof IllegalArgumentException);
-                    verify(repository, never()).updateBooster(anyString(), any(), any(), any(), any());
+                    verify(repository, never()).updateBooster(anySqlClient(), anyString(), any(), any(), any(), any());
                 });
                 context.completeNow();
             }));

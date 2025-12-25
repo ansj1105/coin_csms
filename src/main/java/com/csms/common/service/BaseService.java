@@ -2,13 +2,18 @@ package com.csms.common.service;
 
 import io.vertx.core.Future;
 import io.vertx.pgclient.PgPool;
-import lombok.RequiredArgsConstructor;
+import io.vertx.sqlclient.SqlClient;
 
 import java.util.List;
 
-@RequiredArgsConstructor
 public abstract class BaseService {
     protected final PgPool pool;
+    protected final SqlClient client;
+    
+    public BaseService(PgPool pool) {
+        this.pool = pool;
+        this.client = pool; // PgPool은 SqlClient를 구현함
+    }
     
     /**
      * 여러 Future<Void>를 실행하고 결과를 Future<Void>로 변환

@@ -10,13 +10,13 @@ ON CONFLICT (login_id) DO NOTHING;
 
 -- 테스트용 사용자 생성 (비밀번호: test1234)
 -- BCrypt 해시: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
-INSERT INTO users (login_id, password_hash, nickname, email, status, level, referral_code, created_at, updated_at)
+INSERT INTO users (login_id, password_hash, nickname, email, phone, status, level, referral_code, sanction_status, created_at, updated_at)
 VALUES 
-    ('testuser1', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저1', 'test1@example.com', 'ACTIVE', 1, 'TEST001', NOW() - INTERVAL '30 days', NOW()),
-    ('testuser2', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저2', 'test2@example.com', 'ACTIVE', 2, 'TEST002', NOW() - INTERVAL '20 days', NOW()),
-    ('testuser3', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저3', 'test3@example.com', 'ACTIVE', 1, 'TEST003', NOW() - INTERVAL '10 days', NOW()),
-    ('testuser4', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저4', 'test4@example.com', 'ACTIVE', 3, 'TEST004', NOW() - INTERVAL '5 days', NOW()),
-    ('testuser5', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저5', 'test5@example.com', 'ACTIVE', 2, 'TEST005', NOW() - INTERVAL '1 day', NOW())
+    ('testuser1', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저1', 'test1@example.com', '010-1111-1111', 'ACTIVE', 1, 'TEST001', 'WARNING', NOW() - INTERVAL '30 days', NOW()),
+    ('testuser2', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저2', 'test2@example.com', '010-2222-2222', 'ACTIVE', 2, 'TEST002', NULL, NOW() - INTERVAL '20 days', NOW()),
+    ('testuser3', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저3', 'test3@example.com', '010-3333-3333', 'ACTIVE', 1, 'TEST003', 'SUSPENDED', NOW() - INTERVAL '10 days', NOW()),
+    ('testuser4', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저4', 'test4@example.com', '010-4444-4444', 'ACTIVE', 3, 'TEST004', NULL, NOW() - INTERVAL '5 days', NOW()),
+    ('testuser5', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '테스트유저5', 'test5@example.com', '010-5555-5555', 'INACTIVE', 2, 'TEST005', NULL, NOW() - INTERVAL '1 day', NOW())
 ON CONFLICT (login_id) DO NOTHING;
 
 -- 추천인 관계 설정
@@ -308,6 +308,203 @@ SELECT
     'COMPLETED',
     NOW() - INTERVAL '5 days',
     NOW() - INTERVAL '5 days'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+-- Currency 데이터 (지갑 테스트용)
+INSERT INTO currency (code, name, chain, decimals, is_active, created_at, updated_at)
+VALUES 
+    ('KRWT', 'Kori Wallet Token', 'KRC-20', 6, true, NOW(), NOW()),
+    ('TRX', 'Tron', 'TRC-20', 6, true, NOW(), NOW()),
+    ('USDT', 'Tether', 'TRC-20', 6, true, NOW(), NOW())
+ON CONFLICT (code, chain) DO NOTHING;
+
+-- 지갑 데이터 (testuser1용 - testGetMemberWallets 테스트)
+INSERT INTO wallets (user_id, currency_id, address, balance, created_at, updated_at)
+SELECT 
+    u.id,
+    c.id,
+    'KR-DKWA38JDDJI29FJM1239WIJWR30R03J1239RFJ13202W3JF029FJ02JSKJASFF',
+    200000.0,
+    NOW(),
+    NOW()
+FROM users u
+CROSS JOIN currency c
+WHERE u.login_id = 'testuser1' AND c.code = 'KRWT' AND c.chain = 'KRC-20'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO wallets (user_id, currency_id, address, balance, created_at, updated_at)
+SELECT 
+    u.id,
+    c.id,
+    'TR-TRX1234567890123456789012345678901234567890',
+    50000.0,
+    NOW(),
+    NOW()
+FROM users u
+CROSS JOIN currency c
+WHERE u.login_id = 'testuser1' AND c.code = 'TRX' AND c.chain = 'TRC-20'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO wallets (user_id, currency_id, address, balance, created_at, updated_at)
+SELECT 
+    u.id,
+    c.id,
+    'TR-USDT1234567890123456789012345678901234567890',
+    10000.0,
+    NOW(),
+    NOW()
+FROM users u
+CROSS JOIN currency c
+WHERE u.login_id = 'testuser1' AND c.code = 'USDT' AND c.chain = 'TRC-20'
+ON CONFLICT DO NOTHING;
+
+-- 더 많은 추천인 관계 (TopReferrers 테스트용)
+INSERT INTO referral_relations (referrer_id, referred_id, status, created_at, updated_at)
+SELECT 
+    u1.id,
+    u2.id,
+    'ACTIVE',
+    NOW() - INTERVAL '8 days',
+    NOW()
+FROM users u1
+CROSS JOIN users u2
+WHERE u1.login_id = 'testuser1' AND u2.login_id = 'testuser4'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO referral_relations (referrer_id, referred_id, status, created_at, updated_at)
+SELECT 
+    u1.id,
+    u2.id,
+    'ACTIVE',
+    NOW() - INTERVAL '6 days',
+    NOW()
+FROM users u1
+CROSS JOIN users u2
+WHERE u1.login_id = 'testuser1' AND u2.login_id = 'testuser5'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO referral_relations (referrer_id, referred_id, status, created_at, updated_at)
+SELECT 
+    u1.id,
+    u2.id,
+    'ACTIVE',
+    NOW() - INTERVAL '4 days',
+    NOW()
+FROM users u1
+CROSS JOIN users u2
+WHERE u1.login_id = 'testuser2' AND u2.login_id = 'testuser4'
+ON CONFLICT DO NOTHING;
+
+-- 더 많은 마이닝 히스토리 데이터 (차트 데이터용 - 다양한 날짜)
+INSERT INTO mining_history (user_id, type, amount, created_at, updated_at)
+SELECT 
+    u.id,
+    'BROADCAST_PROGRESS',
+    80.0,
+    NOW() - INTERVAL '14 days',
+    NOW() - INTERVAL '14 days'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO mining_history (user_id, type, amount, created_at, updated_at)
+SELECT 
+    u.id,
+    'BROADCAST_PROGRESS',
+    90.0,
+    NOW() - INTERVAL '13 days',
+    NOW() - INTERVAL '13 days'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO mining_history (user_id, type, amount, created_at, updated_at)
+SELECT 
+    u.id,
+    'BROADCAST_PROGRESS',
+    110.0,
+    NOW() - INTERVAL '12 days',
+    NOW() - INTERVAL '12 days'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO mining_history (user_id, type, amount, created_at, updated_at)
+SELECT 
+    u.id,
+    'BROADCAST_PROGRESS',
+    130.0,
+    NOW() - INTERVAL '11 days',
+    NOW() - INTERVAL '11 days'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO mining_history (user_id, type, amount, created_at, updated_at)
+SELECT 
+    u.id,
+    'BROADCAST_PROGRESS',
+    140.0,
+    NOW() - INTERVAL '10 days',
+    NOW() - INTERVAL '10 days'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO mining_history (user_id, type, amount, created_at, updated_at)
+SELECT 
+    u.id,
+    'BROADCAST_PROGRESS',
+    160.0,
+    NOW() - INTERVAL '9 days',
+    NOW() - INTERVAL '9 days'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO mining_history (user_id, type, amount, created_at, updated_at)
+SELECT 
+    u.id,
+    'BROADCAST_PROGRESS',
+    170.0,
+    NOW() - INTERVAL '8 days',
+    NOW() - INTERVAL '8 days'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+-- 일일 마이닝 데이터 추가 (과거 날짜)
+INSERT INTO daily_mining (user_id, mining_date, total_amount, created_at, updated_at)
+SELECT 
+    u.id,
+    CURRENT_DATE - INTERVAL '1 day',
+    300.0,
+    NOW() - INTERVAL '1 day',
+    NOW() - INTERVAL '1 day'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO daily_mining (user_id, mining_date, total_amount, created_at, updated_at)
+SELECT 
+    u.id,
+    CURRENT_DATE - INTERVAL '2 days',
+    250.0,
+    NOW() - INTERVAL '2 days',
+    NOW() - INTERVAL '2 days'
+FROM users u
+WHERE u.login_id = 'testuser1'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO daily_mining (user_id, mining_date, total_amount, created_at, updated_at)
+SELECT 
+    u.id,
+    CURRENT_DATE - INTERVAL '3 days',
+    200.0,
+    NOW() - INTERVAL '3 days',
+    NOW() - INTERVAL '3 days'
 FROM users u
 WHERE u.login_id = 'testuser1'
 ON CONFLICT DO NOTHING;

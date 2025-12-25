@@ -49,7 +49,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
             ? searchKeyword.substring(0, 20) 
             : searchKeyword;
         
-        return repository.getMembers(finalLimit, finalOffset, searchCategory, finalSearchKeyword, activityStatus, sanctionStatus)
+        return repository.getMembers(client, finalLimit, finalOffset, searchCategory, finalSearchKeyword, activityStatus, sanctionStatus)
             .onSuccess(result -> {
                 log.info("getMembers transaction completed - total: {}, returned: {}", 
                     result.getTotal(), result.getMembers().size());
@@ -61,7 +61,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
     
     public Future<MemberDetailDto> getMemberDetail(Long memberId) {
         log.info("getMemberDetail transaction started - memberId: {}", memberId);
-        return repository.getMemberDetail(memberId)
+        return repository.getMemberDetail(client, memberId)
             .onSuccess(result -> {
                 log.info("getMemberDetail transaction completed - memberId: {}, nickname: {}", 
                     memberId, result.getNickname());
@@ -78,7 +78,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
         final String requestSanctionStatus = request.getSanctionStatus();
         
         // 현재 제재 상태 조회
-        return repository.getMemberDetail(memberId)
+        return repository.getMemberDetail(client, memberId)
             .compose(member -> {
                 String currentSanction = member.getSanctionStatus();
                 
@@ -93,7 +93,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
                         : requestSanctionStatus;
                 }
                 
-                return repository.updateSanctionStatus(memberId, finalSanctionStatus);
+                return repository.updateSanctionStatus(client, memberId, finalSanctionStatus);
             })
             .onSuccess(result -> {
                 log.info("updateSanctionStatus transaction completed - memberId: {}", memberId);
@@ -109,6 +109,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
             request.getEmail() != null ? "***" : null, request.getLevel());
         
         return repository.updateMember(
+            client,
             memberId,
             request.getPhone(),
             request.getEmail(),
@@ -124,7 +125,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
     
     public Future<Void> resetTransactionPassword(Long memberId) {
         log.info("resetTransactionPassword transaction started - memberId: {}", memberId);
-        return repository.resetTransactionPassword(memberId)
+        return repository.resetTransactionPassword(client, memberId)
             .onSuccess(result -> {
                 log.info("resetTransactionPassword transaction completed - memberId: {}", memberId);
             })
@@ -151,6 +152,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
         }
         
         return repository.adjustCoin(
+            client,
             request.getUserId(),
             request.getNetwork(),
             request.getToken(),
@@ -185,6 +187,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
         }
         
         return repository.adjustKoriPoint(
+            client,
             request.getUserId(),
             request.getAmount(),
             request.getType()
@@ -216,7 +219,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
             offset = 0;
         }
         
-        return repository.getMemberWallets(memberId, network, token, limit, offset)
+        return repository.getMemberWallets(client, memberId, network, token, limit, offset)
             .onSuccess(result -> {
                 log.info("getMemberWallets transaction completed - memberId: {}, total: {}, returned: {}", 
                     memberId, result.getTotal(), result.getWallets().size());
@@ -263,7 +266,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
             endDate = end.atTime(23, 59, 59);
         }
         
-        return repository.getMiningHistory(userId, limit, offset, startDate, endDate)
+        return repository.getMiningHistory(client, userId, limit, offset, startDate, endDate)
             .onSuccess(result -> {
                 log.info("getMiningHistory transaction completed - userId: {}, total: {}, returned: {}", 
                     userId, result.getTotal(), result.getRecords().size());
@@ -285,7 +288,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
             searchCategory, activityStatus, sanctionStatus);
         
         // 모든 데이터 조회 (페이지네이션 없이)
-        return repository.getMembers(
+        return repository.getMembers(client,
             Integer.MAX_VALUE,
             0,
             searchCategory,
@@ -332,6 +335,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
         
         // 모든 데이터 조회 (페이지네이션 없이)
         return repository.getMiningHistory(
+            client,
             userId,
             Integer.MAX_VALUE,
             0,

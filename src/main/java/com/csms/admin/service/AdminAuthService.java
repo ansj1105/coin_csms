@@ -55,7 +55,7 @@ public class AdminAuthService extends BaseService {
                         "로그인 시도 횟수를 초과했습니다. 30분 후 다시 시도해주세요."));
                 }
                 
-                return adminRepository.getAdminByLoginId(pool, dto.getId())
+                return adminRepository.getAdminByLoginId(client, dto.getId())
                     .compose(admin -> {
                         if (admin == null) {
                             log.warn("Admin login failed - admin not found - adminId: {}, ip: {}", 
@@ -99,7 +99,7 @@ public class AdminAuthService extends BaseService {
         }
         
         // RateLimiter가 null일 때는 바로 로그인 처리
-        return adminRepository.getAdminByLoginId(pool, dto.getId())
+        return adminRepository.getAdminByLoginId(client, dto.getId())
             .compose(admin -> {
                 if (admin == null) {
                     log.warn("Admin login failed - admin not found - adminId: {}, ip: {}", 

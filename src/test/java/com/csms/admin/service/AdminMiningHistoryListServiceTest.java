@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.csms.common.TestArgumentMatchers.anySqlClient;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -42,6 +43,7 @@ class AdminMiningHistoryListServiceTest {
             .build();
         
         when(repository.getMiningHistoryList(
+            anySqlClient(),
             eq(20),
             eq(0),
             eq("ALL"),
@@ -59,7 +61,7 @@ class AdminMiningHistoryListServiceTest {
                     assertNotNull(result);
                     assertEquals(20, result.getLimit());
                     assertEquals(0, result.getOffset());
-                    verify(repository, times(1)).getMiningHistoryList(anyInt(), anyInt(), anyString(), any(), any(), anyString(), anyString());
+                    verify(repository, times(1)).getMiningHistoryList(anySqlClient(), anyInt(), anyInt(), anyString(), any(), any(), anyString(), anyString());
                 });
                 context.completeNow();
             }));
@@ -75,6 +77,7 @@ class AdminMiningHistoryListServiceTest {
             .build();
         
         when(repository.getMiningHistoryList(
+            anySqlClient(),
             eq(30),
             eq(0),
             eq("NICKNAME"),
@@ -91,7 +94,7 @@ class AdminMiningHistoryListServiceTest {
                 context.verify(() -> {
                     assertNotNull(result);
                     assertEquals(30, result.getLimit());
-                    verify(repository, times(1)).getMiningHistoryList(anyInt(), anyInt(), anyString(), anyString(), anyString(), anyString(), anyString());
+                    verify(repository, times(1)).getMiningHistoryList(anySqlClient(), anyInt(), anyInt(), anyString(), anyString(), anyString(), anyString(), anyString());
                 });
                 context.completeNow();
             }));
@@ -108,6 +111,7 @@ class AdminMiningHistoryListServiceTest {
             .build();
         
         when(repository.getMiningHistoryList(
+            anySqlClient(),
             eq(20),
             eq(0),
             eq("ALL"),
@@ -123,7 +127,7 @@ class AdminMiningHistoryListServiceTest {
                 // Then
                 context.verify(() -> {
                     assertNotNull(result);
-                    verify(repository, times(1)).getMiningHistoryList(anyInt(), anyInt(), anyString(), eq("a".repeat(20)), any(), anyString(), anyString());
+                    verify(repository, times(1)).getMiningHistoryList(anySqlClient(), anyInt(), anyInt(), anyString(), eq("a".repeat(20)), any(), anyString(), anyString());
                 });
                 context.completeNow();
             }));

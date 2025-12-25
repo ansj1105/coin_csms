@@ -63,6 +63,7 @@ public class AdminMiningService extends BaseService {
         final String finalActivityStatus = (activityStatus == null || activityStatus.isEmpty()) ? "ALL" : activityStatus;
         
         return repository.getMiningRecords(
+            client,
             finalLimit,
             finalOffset,
             startDateTime,
@@ -85,7 +86,7 @@ public class AdminMiningService extends BaseService {
     
     public Future<MiningConditionDto> getMiningConditions() {
         log.info("getMiningConditions transaction started");
-        return repository.getMiningConditions()
+        return repository.getMiningConditions(client)
             .onSuccess(result -> {
                 log.info("getMiningConditions transaction completed - enabled: {}, missions: {}", 
                     result.getBasicConditions().getIsEnabled(), 
@@ -102,6 +103,7 @@ public class AdminMiningService extends BaseService {
             request.getMissions() != null ? request.getMissions().size() : 0);
         
         return repository.updateBasicConditions(
+            client,
             request.getIsEnabled(),
             request.getBaseTimeEnabled(),
             request.getBaseTimeMinutes()
@@ -110,6 +112,7 @@ public class AdminMiningService extends BaseService {
                 List<Future<Void>> missionFutures = new ArrayList<>();
                 for (UpdateBasicConditionRequestDto.MissionUpdate mission : request.getMissions()) {
                     missionFutures.add(repository.updateMission(
+                        client,
                         mission.getType(),
                         mission.getRequiredCount(),
                         mission.getIsEnabled()
@@ -138,7 +141,7 @@ public class AdminMiningService extends BaseService {
         List<Future<Void>> futures = new ArrayList<>();
         
         if (request.getBroadcastProgress() != null) {
-            futures.add(repository.updateProgressSetting(
+            futures.add(repository.updateProgressSetting(client,
                 "BROADCAST_PROGRESS",
                 request.getBroadcastProgress().getIsEnabled(),
                 request.getBroadcastProgress().getTimePerHour(),
@@ -147,7 +150,7 @@ public class AdminMiningService extends BaseService {
         }
         
         if (request.getBroadcastListening() != null) {
-            futures.add(repository.updateProgressSetting(
+            futures.add(repository.updateProgressSetting(client,
                 "BROADCAST_LISTENING",
                 request.getBroadcastListening().getIsEnabled(),
                 request.getBroadcastListening().getTimePerHour(),
@@ -185,7 +188,7 @@ public class AdminMiningService extends BaseService {
             return Future.failedFuture(new IllegalArgumentException("Daily limit must be non-negative"));
         }
         
-        return repository.updateLevelLimit(request.getLevel(), request.getDailyLimit())
+        return repository.updateLevelLimit(client, request.getLevel(), request.getDailyLimit())
             .onSuccess(result -> {
                 log.info("updateLevelLimit transaction completed - level: {}, dailyLimit: {}", 
                     request.getLevel(), request.getDailyLimit());
@@ -198,20 +201,20 @@ public class AdminMiningService extends BaseService {
     
     public Future<Void> updateLevelLimitsEnabled(UpdateLevelLimitsEnabledRequestDto request) {
         log.info("updateLevelLimitsEnabled transaction started - enabled: {}", request.getEnabled());
-        return repository.updateLevelLimitsEnabled(request.getEnabled())
+        return repository.updateLevelLimitsEnabled(client, request.getEnabled())
             .onSuccess(result -> {
                 log.info("updateLevelLimitsEnabled transaction completed - enabled: {}", request.getEnabled());
             })
             .onFailure(err -> {
                 log.error("updateLevelLimitsEnabled transaction failed - enabled: {}", request.getEnabled(), err);
             });
-    }
-    
+        }
+        
     // ========== Mining Booster 관련 메서드 ==========
     
     public Future<MiningBoosterDto> getMiningBoosters() {
         log.info("getMiningBoosters transaction started");
-        return repository.getMiningBoosters()
+        return repository.getMiningBoosters(client)
             .onSuccess(result -> {
                 log.info("getMiningBoosters transaction completed - boosters: {}, totalEfficiency: {}", 
                     result.getBoosters().size(), result.getSummary().getTotalEfficiency());
@@ -231,7 +234,7 @@ public class AdminMiningService extends BaseService {
             return Future.failedFuture(new IllegalArgumentException("Type is required"));
         }
         
-        return repository.updateBooster(
+        return repository.updateBooster(client,
             request.getType(),
             request.getIsEnabled(),
             request.getEfficiency(),
@@ -250,7 +253,7 @@ public class AdminMiningService extends BaseService {
     
     public Future<ReferralBonusDto> getReferralBonus() {
         log.info("getReferralBonus transaction started");
-        return repository.getReferralBonus()
+        return repository.getReferralBonus(client)
             .onSuccess(result -> {
                 log.info("getReferralBonus transaction completed - enabled: {}, distributionRate: {}", 
                     result.getIsEnabled(), result.getDistributionRate());
@@ -270,7 +273,7 @@ public class AdminMiningService extends BaseService {
             return Future.failedFuture(new IllegalArgumentException("Distribution rate must be between 0 and 100"));
         }
         
-        return repository.updateReferralBonus(
+        return repository.updateReferralBonus(client,
             request.getIsEnabled(),
             request.getDistributionRate()
         )
@@ -287,7 +290,7 @@ public class AdminMiningService extends BaseService {
     
     public Future<RankingRewardDto> getRankingReward() {
         log.info("getRankingReward transaction started");
-        return repository.getRankingReward()
+        return repository.getRankingReward(client)
             .onSuccess(result -> {
                 log.info("getRankingReward transaction completed - regional: {}, national: {}", 
                     result.getRegional() != null, result.getNational() != null);
@@ -329,7 +332,7 @@ public class AdminMiningService extends BaseService {
             return Future.failedFuture(new IllegalArgumentException("Rank4to10 must be non-negative"));
         }
         
-        return repository.updateRankingReward(
+        return repository.updateRankingReward(client,
             request.getType(),
             request.getRank1(),
             request.getRank2(),
@@ -342,8 +345,8 @@ public class AdminMiningService extends BaseService {
         .onFailure(err -> {
             log.error("updateRankingReward transaction failed - type: {}", request.getType(), err);
         });
-    }
-    
+        }
+        
     // ========== Mining History List 관련 메서드 ==========
     
     public Future<MiningHistoryListDto> getMiningHistoryList(
@@ -368,6 +371,7 @@ public class AdminMiningService extends BaseService {
             : searchKeyword;
         
         return repository.getMiningHistoryList(
+            client,
             finalLimit,
             finalOffset,
             finalSearchCategory,
@@ -403,7 +407,7 @@ public class AdminMiningService extends BaseService {
         LocalDateTime endDateTime = range.endDate().atTime(23, 59, 59);
         
         // 모든 데이터 조회 (페이지네이션 없이)
-        return repository.getMiningRecords(
+        return repository.getMiningRecords(pool,
             Integer.MAX_VALUE,
             0,
             startDateTime,
@@ -437,6 +441,7 @@ public class AdminMiningService extends BaseService {
         
         // 모든 데이터 조회 (페이지네이션 없이)
         return repository.getMiningHistoryList(
+            client,
             Integer.MAX_VALUE,
             0,
             searchCategory,
