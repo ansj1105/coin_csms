@@ -18,22 +18,13 @@ import java.time.format.DateTimeFormatter;
 public class AdminMemberHandler extends BaseHandler {
     
     private final AdminMemberService service;
-    private final AdminMemberExportService exportService;
-    private final AdminMiningHistoryService miningHistoryService;
-    private final AdminMiningHistoryExportService miningHistoryExportService;
     
     public AdminMemberHandler(
         Vertx vertx,
-        AdminMemberService service,
-        AdminMemberExportService exportService,
-        AdminMiningHistoryService miningHistoryService,
-        AdminMiningHistoryExportService miningHistoryExportService
+        AdminMemberService service
     ) {
         super(vertx);
         this.service = service;
-        this.exportService = exportService;
-        this.miningHistoryService = miningHistoryService;
-        this.miningHistoryExportService = miningHistoryExportService;
     }
     
     public Router getRouter() {
@@ -218,7 +209,7 @@ public class AdminMemberHandler extends BaseHandler {
             String activityStatus = ctx.queryParams().get("activityStatus");
             String sanctionStatus = ctx.queryParams().get("sanctionStatus");
             
-            exportService.exportToExcel(searchCategory, searchKeyword, activityStatus, sanctionStatus)
+            service.exportMembers(searchCategory, searchKeyword, activityStatus, sanctionStatus)
                 .onSuccess(buffer -> {
                     // 파일명 생성 (현재 날짜시간 포함)
                     String fileName = "members_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".xlsx";
@@ -248,7 +239,7 @@ public class AdminMemberHandler extends BaseHandler {
             Integer offset = getQueryParamAsInteger(ctx, "offset", 0);
             String dateRange = ctx.queryParams().get("dateRange");
             
-            miningHistoryService.getMiningHistory(userId, limit, offset, dateRange)
+            service.getMiningHistory(userId, limit, offset, dateRange)
                 .onSuccess(result -> {
                     success(ctx, result);
                 })
@@ -270,7 +261,7 @@ public class AdminMemberHandler extends BaseHandler {
             Long userId = Long.parseLong(ctx.pathParam("userId"));
             String dateRange = ctx.queryParams().get("dateRange");
             
-            miningHistoryExportService.exportToExcel(userId, dateRange)
+            service.exportMiningHistory(userId, dateRange)
                 .onSuccess(buffer -> {
                     String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
                     String filename = "mining_history_" + userId + "_" + timestamp + ".xlsx";

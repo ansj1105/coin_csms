@@ -5,11 +5,9 @@ import com.csms.common.database.RowMapper;
 import com.csms.common.repository.BaseRepository;
 import io.vertx.core.Future;
 import io.vertx.sqlclient.SqlClient;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
 
-@Slf4j
 public class AdminRepository extends BaseRepository {
     
     private final RowMapper<Admin> adminMapper = row -> Admin.builder()
@@ -32,7 +30,9 @@ public class AdminRepository extends BaseRepository {
         
         return query(client, sql, Collections.singletonMap("login_id", loginId))
             .map(rows -> fetchOne(adminMapper, rows))
-            .onFailure(throwable -> log.error("관리자 조회 실패 - loginId: {}", loginId, throwable));
+            .onFailure(throwable -> {
+                throw new com.csms.common.exceptions.InternalServerException("Failed to get admin by loginId: " + loginId, throwable);
+            });
     }
     
     public Future<Admin> getAdminById(SqlClient client, Long id) {
@@ -45,7 +45,9 @@ public class AdminRepository extends BaseRepository {
         
         return query(client, sql, Collections.singletonMap("id", id))
             .map(rows -> fetchOne(adminMapper, rows))
-            .onFailure(throwable -> log.error("관리자 조회 실패 - id: {}", id, throwable));
+            .onFailure(throwable -> {
+                throw new com.csms.common.exceptions.InternalServerException("Failed to get admin by id: " + id, throwable);
+            });
     }
 }
 

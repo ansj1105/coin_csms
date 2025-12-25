@@ -126,6 +126,14 @@ tasks.withType<Test> {
     }
     // ANSI 색상 지원
     outputs.upToDateWhen { false }
+    
+    // 테스트 데이터베이스 연결 설정 (환경 변수로 오버라이드 가능)
+    // 사용 예: ./gradlew test -Dtest.db.host=localhost -Dtest.db.port=5432 -Dtest.db.database=coin_system_cloud -Dtest.db.user=foxya -Dtest.db.password=foxya1124!@
+    systemProperty("test.db.host", System.getProperty("test.db.host", System.getenv("TEST_DB_HOST") ?: ""))
+    systemProperty("test.db.port", System.getProperty("test.db.port", System.getenv("TEST_DB_PORT") ?: ""))
+    systemProperty("test.db.database", System.getProperty("test.db.database", System.getenv("TEST_DB_DATABASE") ?: ""))
+    systemProperty("test.db.user", System.getProperty("test.db.user", System.getenv("TEST_DB_USER") ?: ""))
+    systemProperty("test.db.password", System.getProperty("test.db.password", System.getenv("TEST_DB_PASSWORD") ?: ""))
 }
 
 // 테스트 결과 색상 출력을 위한 설정

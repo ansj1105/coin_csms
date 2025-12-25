@@ -20,6 +20,8 @@ public class ErrorHandler {
             statusCode = 403;
         } else if (failure instanceof NotFoundException) {
             statusCode = 404;
+        } else if (failure instanceof InternalServerException) {
+            statusCode = 500;
         } else if (statusCode == -1) {
             statusCode = 500;
         }

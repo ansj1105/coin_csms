@@ -38,14 +38,19 @@ public class AdminAuthService extends BaseService {
     }
     
     public Future<AdminLoginResponseDto> login(AdminLoginDto dto, String clientIp) {
+        log.info("Admin login attempt - adminId: {}, ip: {}", dto.getId(), clientIp);
+        
         // Rate Limiting 체크 (5회 실패 시 30분 차단)
         if (rateLimiter == null) {
             // Redis 연결 실패 시 Rate Limiting 없이 진행
-            log.warn("RateLimiter not available, skipping rate limit check");
+            log.warn("RateLimiter not available, skipping rate limit check - adminId: {}, ip: {}", 
+                dto.getId(), clientIp);
         } else {
             return rateLimiter.checkAdminLoginAttempt(clientIp)
             .compose(allowed -> {
                 if (!allowed) {
+                    log.warn("Admin login blocked by rate limiter - adminId: {}, ip: {}", 
+                        dto.getId(), clientIp);
                     return Future.failedFuture(new BadRequestException(
                         "로그인 시도 횟수를 초과했습니다. 30분 후 다시 시도해주세요."));
                 }
@@ -53,12 +58,16 @@ public class AdminAuthService extends BaseService {
                 return adminRepository.getAdminByLoginId(pool, dto.getId())
                     .compose(admin -> {
                         if (admin == null) {
+                            log.warn("Admin login failed - admin not found - adminId: {}, ip: {}", 
+                                dto.getId(), clientIp);
                             rateLimiter.recordAdminLoginFailure(clientIp);
                             return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
                         }
                         
                         // 비밀번호 검증
                         if (!BCrypt.checkpw(dto.getPassword(), admin.getPasswordHash())) {
+                            log.warn("Admin login failed - invalid password - adminId: {}, ip: {}", 
+                                dto.getId(), clientIp);
                             rateLimiter.recordAdminLoginFailure(clientIp);
                             return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
                         }
@@ -82,6 +91,9 @@ public class AdminAuthService extends BaseService {
                                 .adminId(admin.getLoginId())
                                 .build()
                         );
+                    })
+                    .onFailure(err -> {
+                        log.error("Admin login failed - adminId: {}, ip: {}", dto.getId(), clientIp, err);
                     });
             });
         }
@@ -90,11 +102,15 @@ public class AdminAuthService extends BaseService {
         return adminRepository.getAdminByLoginId(pool, dto.getId())
             .compose(admin -> {
                 if (admin == null) {
+                    log.warn("Admin login failed - admin not found - adminId: {}, ip: {}", 
+                        dto.getId(), clientIp);
                     return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
                 }
                 
                 // 비밀번호 검증
                 if (!BCrypt.checkpw(dto.getPassword(), admin.getPasswordHash())) {
+                    log.warn("Admin login failed - invalid password - adminId: {}, ip: {}", 
+                        dto.getId(), clientIp);
                     return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
                 }
                 
@@ -114,6 +130,9 @@ public class AdminAuthService extends BaseService {
                         .adminId(admin.getLoginId())
                         .build()
                 );
+            })
+            .onFailure(err -> {
+                log.error("Admin login failed - adminId: {}, ip: {}", dto.getId(), clientIp, err);
             });
     }
 }

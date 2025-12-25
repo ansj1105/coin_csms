@@ -2,7 +2,7 @@ package com.csms.admin.service;
 
 import com.csms.admin.dto.MiningBoosterDto;
 import com.csms.admin.dto.UpdateBoosterRequestDto;
-import com.csms.admin.repository.AdminMiningBoosterRepository;
+import com.csms.admin.repository.AdminMiningRepository;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -24,13 +24,13 @@ class AdminMiningBoosterServiceTest {
     private PgPool pool;
     
     @Mock
-    private AdminMiningBoosterRepository repository;
+    private AdminMiningRepository repository;
     
-    private AdminMiningBoosterService service;
+    private AdminMiningService service;
     
     @BeforeEach
     void setUp() {
-        service = new AdminMiningBoosterService(pool, repository);
+        service = new AdminMiningService(pool, repository);
     }
     
     @Test

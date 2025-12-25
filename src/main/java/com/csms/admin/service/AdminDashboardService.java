@@ -28,8 +28,12 @@ public class AdminDashboardService extends BaseRepository {
     }
     
     public Future<DashboardStatsDto> getDashboardStats(String dateRange, String startDate, String endDate) {
+        log.debug("getDashboardStats called - dateRange: {}, startDate: {}, endDate: {}", 
+            dateRange, startDate, endDate);
+        
         // 날짜 범위 계산
         DateRange range = calculateDateRange(dateRange, startDate, endDate);
+        log.debug("Calculated date range - start: {}, end: {}", range.startDate, range.endDate);
         
         return Future.all(
             getTotalStats(range),
@@ -37,12 +41,16 @@ public class AdminDashboardService extends BaseRepository {
             getTopMembers(),
             getNotifications(),
             getTopReferrers()
-        ).map(result -> {
+        )
+        .map(result -> {
             DashboardStatsDto.StatsDto stats = result.resultAt(0);
             List<DashboardStatsDto.ChartDataDto> chartData = result.resultAt(1);
             List<DashboardStatsDto.TopMemberDto> topMembers = result.resultAt(2);
             List<DashboardStatsDto.NotificationDto> notifications = result.resultAt(3);
             List<DashboardStatsDto.TopReferrerDto> topReferrers = result.resultAt(4);
+            
+            log.info("getDashboardStats succeeded - chartData: {}, topMembers: {}, notifications: {}, topReferrers: {}", 
+                chartData.size(), topMembers.size(), notifications.size(), topReferrers.size());
             
             return DashboardStatsDto.builder()
                 .stats(stats)
@@ -51,6 +59,10 @@ public class AdminDashboardService extends BaseRepository {
                 .notifications(notifications)
                 .topReferrers(topReferrers)
                 .build();
+        })
+        .onFailure(err -> {
+            log.error("getDashboardStats failed - dateRange: {}, startDate: {}, endDate: {}", 
+                dateRange, startDate, endDate, err);
         });
     }
     

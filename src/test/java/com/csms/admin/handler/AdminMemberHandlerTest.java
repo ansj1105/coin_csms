@@ -24,22 +24,13 @@ class AdminMemberHandlerTest {
     @Mock
     private AdminMemberService service;
     
-    @Mock
-    private AdminMemberExportService exportService;
-    
-    @Mock
-    private AdminMiningHistoryService miningHistoryService;
-    
-    @Mock
-    private AdminMiningHistoryExportService miningHistoryExportService;
-    
     private AdminMemberHandler handler;
     private Vertx vertx;
     
     @BeforeEach
     void setUp(Vertx vertx) {
         this.vertx = vertx;
-        handler = new AdminMemberHandler(vertx, service, exportService, miningHistoryService, miningHistoryExportService);
+        handler = new AdminMemberHandler(vertx, service);
     }
     
     @Test

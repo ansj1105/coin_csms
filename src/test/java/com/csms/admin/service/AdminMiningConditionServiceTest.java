@@ -1,7 +1,7 @@
 package com.csms.admin.service;
 
 import com.csms.admin.dto.*;
-import com.csms.admin.repository.AdminMiningConditionRepository;
+import com.csms.admin.repository.AdminMiningRepository;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -26,13 +26,13 @@ class AdminMiningConditionServiceTest {
     private PgPool pool;
     
     @Mock
-    private AdminMiningConditionRepository repository;
+    private AdminMiningRepository repository;
     
-    private AdminMiningConditionService service;
+    private AdminMiningService service;
     
     @BeforeEach
     void setUp() {
-        service = new AdminMiningConditionService(pool, repository);
+        service = new AdminMiningService(pool, repository);
     }
     
     @Test

@@ -59,8 +59,23 @@ public class HandlerTestBase {
             throw new IllegalStateException("Test environment config not found in src/test/resources/config.json");
         }
         
-        JsonObject jwtConfig = config.getJsonObject("jwt");
+        // 환경 변수나 시스템 프로퍼티로 데이터베이스 설정 오버라이드
+        JsonObject dbConfig = overrideDatabaseConfig(config.getJsonObject("database"));
+        
+        // Flyway 설정도 업데이트
         JsonObject flywayConfig = config.getJsonObject("flyway");
+        if (flywayConfig != null && dbConfig != null) {
+            String dbHost = dbConfig.getString("host", "localhost");
+            Integer dbPort = dbConfig.getInteger("port", 5432);
+            String dbName = dbConfig.getString("database");
+            String dbUser = dbConfig.getString("user");
+            String dbPassword = dbConfig.getString("password");
+            flywayConfig.put("url", String.format("jdbc:postgresql://%s:%d/%s", dbHost, dbPort, dbName));
+            flywayConfig.put("user", dbUser);
+            flywayConfig.put("password", dbPassword);
+        }
+        
+        JsonObject jwtConfig = config.getJsonObject("jwt");
         
         // JWT Auth 설정
         jwtAuth = JWTAuth.create(vertx, new JWTAuthOptions()
@@ -193,6 +208,29 @@ public class HandlerTestBase {
      */
     protected void expectError(HttpResponse<Buffer> res, int expectedStatusCode) {
         assertEquals(expectedStatusCode, res.statusCode());
+    }
+    
+    /**
+     * 데이터베이스 설정 오버라이드 (환경 변수 또는 시스템 프로퍼티)
+     */
+    protected static JsonObject overrideDatabaseConfig(JsonObject dbConfig) {
+        if (dbConfig == null) {
+            return null;
+        }
+        
+        String dbHost = System.getProperty("test.db.host", System.getenv("TEST_DB_HOST"));
+        String dbPort = System.getProperty("test.db.port", System.getenv("TEST_DB_PORT"));
+        String dbName = System.getProperty("test.db.database", System.getenv("TEST_DB_DATABASE"));
+        String dbUser = System.getProperty("test.db.user", System.getenv("TEST_DB_USER"));
+        String dbPassword = System.getProperty("test.db.password", System.getenv("TEST_DB_PASSWORD"));
+        
+        if (dbHost != null) dbConfig.put("host", dbHost);
+        if (dbPort != null) dbConfig.put("port", Integer.parseInt(dbPort));
+        if (dbName != null) dbConfig.put("database", dbName);
+        if (dbUser != null) dbConfig.put("user", dbUser);
+        if (dbPassword != null) dbConfig.put("password", dbPassword);
+        
+        return dbConfig;
     }
     
     /**

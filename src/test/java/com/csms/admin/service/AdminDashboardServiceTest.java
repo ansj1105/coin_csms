@@ -32,7 +32,7 @@ class AdminDashboardServiceTest extends HandlerTestBase {
             String configContent = vertx.fileSystem().readFileBlocking("src/test/resources/config.json").toString();
             JsonObject fullConfig = new JsonObject(configContent);
             JsonObject config = fullConfig.getJsonObject("test");
-            JsonObject dbConfig = config.getJsonObject("database");
+            JsonObject dbConfig = HandlerTestBase.overrideDatabaseConfig(config.getJsonObject("database"));
             
             PgConnectOptions connectOptions = new PgConnectOptions()
                 .setHost(dbConfig.getString("host"))

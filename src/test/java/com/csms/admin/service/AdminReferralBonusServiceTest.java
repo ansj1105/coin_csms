@@ -2,7 +2,7 @@ package com.csms.admin.service;
 
 import com.csms.admin.dto.ReferralBonusDto;
 import com.csms.admin.dto.UpdateReferralBonusRequestDto;
-import com.csms.admin.repository.AdminReferralBonusRepository;
+import com.csms.admin.repository.AdminMiningRepository;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -24,13 +24,13 @@ class AdminReferralBonusServiceTest {
     private PgPool pool;
     
     @Mock
-    private AdminReferralBonusRepository repository;
+    private AdminMiningRepository repository;
     
-    private AdminReferralBonusService service;
+    private AdminMiningService service;
     
     @BeforeEach
     void setUp() {
-        service = new AdminReferralBonusService(pool, repository);
+        service = new AdminMiningService(pool, repository);
     }
     
     @Test

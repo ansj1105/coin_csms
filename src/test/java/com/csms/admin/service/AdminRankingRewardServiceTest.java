@@ -2,7 +2,7 @@ package com.csms.admin.service;
 
 import com.csms.admin.dto.RankingRewardDto;
 import com.csms.admin.dto.UpdateRankingRewardRequestDto;
-import com.csms.admin.repository.AdminRankingRewardRepository;
+import com.csms.admin.repository.AdminMiningRepository;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -24,13 +24,13 @@ class AdminRankingRewardServiceTest {
     private PgPool pool;
     
     @Mock
-    private AdminRankingRewardRepository repository;
+    private AdminMiningRepository repository;
     
-    private AdminRankingRewardService service;
+    private AdminMiningService service;
     
     @BeforeEach
     void setUp() {
-        service = new AdminRankingRewardService(pool, repository);
+        service = new AdminMiningService(pool, repository);
     }
     
     @Test

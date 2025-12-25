@@ -18,34 +18,13 @@ import java.time.format.DateTimeFormatter;
 public class AdminMiningHandler extends BaseHandler {
     
     private final AdminMiningService miningService;
-    private final AdminMiningExportService miningExportService;
-    private final AdminMiningConditionService conditionService;
-    private final AdminMiningBoosterService boosterService;
-    private final AdminMiningHistoryListService historyListService;
-    private final AdminMiningHistoryListExportService historyListExportService;
-    private final AdminReferralBonusService referralBonusService;
-    private final AdminRankingRewardService rankingRewardService;
     
     public AdminMiningHandler(
         Vertx vertx,
-        AdminMiningService miningService,
-        AdminMiningExportService miningExportService,
-        AdminMiningConditionService conditionService,
-        AdminMiningBoosterService boosterService,
-        AdminMiningHistoryListService historyListService,
-        AdminMiningHistoryListExportService historyListExportService,
-        AdminReferralBonusService referralBonusService,
-        AdminRankingRewardService rankingRewardService
+        AdminMiningService miningService
     ) {
         super(vertx);
         this.miningService = miningService;
-        this.miningExportService = miningExportService;
-        this.conditionService = conditionService;
-        this.boosterService = boosterService;
-        this.historyListService = historyListService;
-        this.historyListExportService = historyListExportService;
-        this.referralBonusService = referralBonusService;
-        this.rankingRewardService = rankingRewardService;
     }
     
     public Router getRouter() {
@@ -122,7 +101,7 @@ public class AdminMiningHandler extends BaseHandler {
             String searchKeyword = ctx.queryParams().get("searchKeyword");
             String activityStatus = ctx.queryParams().get("activityStatus");
             
-            miningExportService.exportToExcel(
+            miningService.exportMiningRecords(
                 dateRange,
                 startDate,
                 endDate,
@@ -151,7 +130,7 @@ public class AdminMiningHandler extends BaseHandler {
     // Mining Conditions
     private void getMiningConditions(RoutingContext ctx) {
         try {
-            conditionService.getMiningConditions()
+            miningService.getMiningConditions()
                 .onSuccess(result -> {
                     success(ctx, result);
                 })
@@ -170,7 +149,7 @@ public class AdminMiningHandler extends BaseHandler {
             JsonObject body = ctx.body().asJsonObject();
             UpdateBasicConditionRequestDto request = body.mapTo(UpdateBasicConditionRequestDto.class);
             
-            conditionService.updateBasicConditions(request)
+            miningService.updateBasicConditions(request)
                 .onSuccess(result -> {
                     success(ctx, new JsonObject().put("message", "Basic conditions updated"));
                 })
@@ -189,7 +168,7 @@ public class AdminMiningHandler extends BaseHandler {
             JsonObject body = ctx.body().asJsonObject();
             UpdateProgressSettingRequestDto request = body.mapTo(UpdateProgressSettingRequestDto.class);
             
-            conditionService.updateProgressSetting(request)
+            miningService.updateProgressSetting(request)
                 .onSuccess(result -> {
                     success(ctx, new JsonObject().put("message", "Progress setting updated"));
                 })
@@ -208,7 +187,7 @@ public class AdminMiningHandler extends BaseHandler {
             JsonObject body = ctx.body().asJsonObject();
             UpdateLevelLimitRequestDto request = body.mapTo(UpdateLevelLimitRequestDto.class);
             
-            conditionService.updateLevelLimit(request)
+            miningService.updateLevelLimit(request)
                 .onSuccess(result -> {
                     success(ctx, new JsonObject().put("message", "Level limit updated"));
                 })
@@ -227,7 +206,7 @@ public class AdminMiningHandler extends BaseHandler {
             JsonObject body = ctx.body().asJsonObject();
             UpdateLevelLimitsEnabledRequestDto request = body.mapTo(UpdateLevelLimitsEnabledRequestDto.class);
             
-            conditionService.updateLevelLimitsEnabled(request)
+            miningService.updateLevelLimitsEnabled(request)
                 .onSuccess(result -> {
                     success(ctx, new JsonObject().put("message", "Level limits enabled updated"));
                 })
@@ -244,7 +223,7 @@ public class AdminMiningHandler extends BaseHandler {
     // Mining Booster
     private void getMiningBoosters(RoutingContext ctx) {
         try {
-            boosterService.getMiningBoosters()
+            miningService.getMiningBoosters()
                 .onSuccess(result -> {
                     success(ctx, result);
                 })
@@ -263,7 +242,7 @@ public class AdminMiningHandler extends BaseHandler {
             JsonObject body = ctx.body().asJsonObject();
             UpdateBoosterRequestDto request = body.mapTo(UpdateBoosterRequestDto.class);
             
-            boosterService.updateBooster(request)
+            miningService.updateBooster(request)
                 .onSuccess(result -> {
                     success(ctx, new JsonObject().put("message", "Booster updated"));
                 })
@@ -288,7 +267,7 @@ public class AdminMiningHandler extends BaseHandler {
             String activityStatus = ctx.queryParams().get("activityStatus");
             String sanctionStatus = ctx.queryParams().get("sanctionStatus");
             
-            historyListService.getMiningHistoryList(limit, offset, searchCategory, searchKeyword, sortType, activityStatus, sanctionStatus)
+            miningService.getMiningHistoryList(limit, offset, searchCategory, searchKeyword, sortType, activityStatus, sanctionStatus)
                 .onSuccess(result -> {
                     success(ctx, result);
                 })
@@ -310,7 +289,7 @@ public class AdminMiningHandler extends BaseHandler {
             String activityStatus = ctx.queryParams().get("activityStatus");
             String sanctionStatus = ctx.queryParams().get("sanctionStatus");
             
-            historyListExportService.exportToExcel(searchCategory, searchKeyword, sortType, activityStatus, sanctionStatus)
+            miningService.exportMiningHistoryList(searchCategory, searchKeyword, sortType, activityStatus, sanctionStatus)
                 .onSuccess(buffer -> {
                     String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
                     String filename = "mining_history_list_" + timestamp + ".xlsx";
@@ -334,7 +313,7 @@ public class AdminMiningHandler extends BaseHandler {
     // Referral Bonus
     private void getReferralBonus(RoutingContext ctx) {
         try {
-            referralBonusService.getReferralBonus()
+            miningService.getReferralBonus()
                 .onSuccess(result -> {
                     success(ctx, result);
                 })
@@ -353,7 +332,7 @@ public class AdminMiningHandler extends BaseHandler {
             JsonObject body = ctx.body().asJsonObject();
             UpdateReferralBonusRequestDto request = body.mapTo(UpdateReferralBonusRequestDto.class);
             
-            referralBonusService.updateReferralBonus(request)
+            miningService.updateReferralBonus(request)
                 .onSuccess(result -> {
                     success(ctx, new JsonObject().put("message", "Referral bonus updated"));
                 })
@@ -370,7 +349,7 @@ public class AdminMiningHandler extends BaseHandler {
     // Ranking Reward
     private void getRankingReward(RoutingContext ctx) {
         try {
-            rankingRewardService.getRankingReward()
+            miningService.getRankingReward()
                 .onSuccess(result -> {
                     success(ctx, result);
                 })
@@ -389,7 +368,7 @@ public class AdminMiningHandler extends BaseHandler {
             JsonObject body = ctx.body().asJsonObject();
             UpdateRankingRewardRequestDto request = body.mapTo(UpdateRankingRewardRequestDto.class);
             
-            rankingRewardService.updateRankingReward(request)
+            miningService.updateRankingReward(request)
                 .onSuccess(result -> {
                     success(ctx, new JsonObject().put("message", "Ranking reward updated"));
                 })

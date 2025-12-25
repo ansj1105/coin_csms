@@ -272,156 +272,28 @@ public class ApiVerticle extends AbstractVerticle {
     
     /**
      * 도메인별 라우터 등록
-     * 각 도메인 모듈의 Handler를 등록합니다.
+     * DI Container를 통해 각 도메인 모듈의 Handler를 등록합니다.
      */
     private void registerRouters(Router mainRouter) {
+        // RateLimiter 설정 (Redis 연결 후)
+        RateLimiter rateLimiter = serviceFactory.getRateLimiter(redisApi);
+        if (serviceFactory instanceof DefaultServiceFactory) {
+            ((DefaultServiceFactory) serviceFactory).setAdminAuthServiceRateLimiter(rateLimiter);
+        }
+        
         // User 도메인
-        UserRepository userRepository = new UserRepository();
-        UserService userService = new UserService(
-            serviceFactory.getPool(),
-            userRepository,
-            serviceFactory.getJwtAuth(),
-            serviceFactory.getJwtConfig()
-        );
-        UserHandler userHandler = new UserHandler(
-            vertx,
-            userService,
-            serviceFactory.getJwtAuth()
-        );
-        mainRouter.mountSubRouter("/api/v1/users", userHandler.getRouter());
+        mainRouter.mountSubRouter("/api/v1/users", serviceFactory.getUserHandler(vertx).getRouter());
         
         // Admin 도메인
-        AdminRepository adminRepository = new AdminRepository();
-        // RateLimiter는 Redis 연결이 실패해도 null일 수 있으므로 체크 필요
-        RateLimiter rateLimiter = redisApi != null 
-            ? new RateLimiter(redisApi)
-            : null; // Redis 연결 실패 시 null (RateLimiter에서 null 체크 필요)
-        AdminAuthService adminAuthService = new AdminAuthService(
-            serviceFactory.getPool(),
-            adminRepository,
-            serviceFactory.getJwtAuth(),
-            serviceFactory.getJwtConfig(),
-            rateLimiter
-        );
-        AdminAuthHandler adminAuthHandler = new AdminAuthHandler(
-            vertx,
-            adminAuthService
-        );
-        mainRouter.mountSubRouter("/api/v1/admin/auth", adminAuthHandler.getRouter());
-        
-        // Admin Dashboard
-        AdminDashboardService adminDashboardService = new AdminDashboardService(
-            serviceFactory.getPool()
-        );
-        AdminDashboardHandler adminDashboardHandler = new AdminDashboardHandler(
-            vertx,
-            adminDashboardService,
-            serviceFactory.getJwtAuth()
-        );
-        mainRouter.mountSubRouter("/api/v1/admin", adminDashboardHandler.getRouter());
-        
-        // Admin Member 도메인 (통합)
-        AdminMemberService adminMemberService = new AdminMemberService(
-            serviceFactory.getPool()
-        );
-        AdminMemberExportService adminMemberExportService = new AdminMemberExportService(
-            serviceFactory.getPool()
-        );
-        AdminMiningHistoryRepository adminMiningHistoryRepository = new AdminMiningHistoryRepository(
-            serviceFactory.getPool()
-        );
-        AdminMiningHistoryService adminMiningHistoryService = new AdminMiningHistoryService(
-            serviceFactory.getPool(),
-            adminMiningHistoryRepository
-        );
-        AdminMiningHistoryExportService adminMiningHistoryExportService = new AdminMiningHistoryExportService(
-            serviceFactory.getPool()
-        );
-        AdminMemberHandler adminMemberHandler = new AdminMemberHandler(
-            vertx,
-            adminMemberService,
-            adminMemberExportService,
-            adminMiningHistoryService,
-            adminMiningHistoryExportService
-        );
-        mainRouter.mountSubRouter("/api/v1/admin/members", adminMemberHandler.getRouter());
-        
-        // Admin Mining 도메인 (통합)
-        AdminMiningRepository adminMiningRepository = new AdminMiningRepository(
-            serviceFactory.getPool()
-        );
-        AdminMiningService adminMiningService = new AdminMiningService(
-            serviceFactory.getPool(),
-            adminMiningRepository
-        );
-        AdminMiningExportService adminMiningExportService = new AdminMiningExportService(
-            serviceFactory.getPool()
-        );
-        AdminMiningConditionRepository adminMiningConditionRepository = new AdminMiningConditionRepository(
-            serviceFactory.getPool()
-        );
-        AdminMiningConditionService adminMiningConditionService = new AdminMiningConditionService(
-            serviceFactory.getPool(),
-            adminMiningConditionRepository
-        );
-        AdminMiningBoosterRepository adminMiningBoosterRepository = new AdminMiningBoosterRepository(
-            serviceFactory.getPool()
-        );
-        AdminMiningBoosterService adminMiningBoosterService = new AdminMiningBoosterService(
-            serviceFactory.getPool(),
-            adminMiningBoosterRepository
-        );
-        AdminMiningHistoryListRepository adminMiningHistoryListRepository = new AdminMiningHistoryListRepository(
-            serviceFactory.getPool()
-        );
-        AdminMiningHistoryListService adminMiningHistoryListService = new AdminMiningHistoryListService(
-            serviceFactory.getPool(),
-            adminMiningHistoryListRepository
-        );
-        AdminMiningHistoryListExportService adminMiningHistoryListExportService = new AdminMiningHistoryListExportService(
-            serviceFactory.getPool()
-        );
-        // Admin Referral Bonus & Ranking Reward (같은 경로에 마운트되어 있음)
-        AdminReferralBonusRepository adminReferralBonusRepository = new AdminReferralBonusRepository(
-            serviceFactory.getPool()
-        );
-        AdminReferralBonusService adminReferralBonusService = new AdminReferralBonusService(
-            serviceFactory.getPool(),
-            adminReferralBonusRepository
-        );
-        AdminRankingRewardRepository adminRankingRewardRepository = new AdminRankingRewardRepository(
-            serviceFactory.getPool()
-        );
-        AdminRankingRewardService adminRankingRewardService = new AdminRankingRewardService(
-            serviceFactory.getPool(),
-            adminRankingRewardRepository
-        );
-        AdminMiningHandler adminMiningHandler = new AdminMiningHandler(
-            vertx,
-            adminMiningService,
-            adminMiningExportService,
-            adminMiningConditionService,
-            adminMiningBoosterService,
-            adminMiningHistoryListService,
-            adminMiningHistoryListExportService,
-            adminReferralBonusService,
-            adminRankingRewardService
-        );
-        mainRouter.mountSubRouter("/api/v1/admin/mining", adminMiningHandler.getRouter());
+        mainRouter.mountSubRouter("/api/v1/admin/auth", serviceFactory.getAdminAuthHandler(vertx).getRouter());
+        mainRouter.mountSubRouter("/api/v1/admin", serviceFactory.getAdminDashboardHandler(vertx).getRouter());
+        mainRouter.mountSubRouter("/api/v1/admin/members", serviceFactory.getAdminMemberHandler(vertx).getRouter());
+        mainRouter.mountSubRouter("/api/v1/admin/mining", serviceFactory.getAdminMiningHandler(vertx).getRouter());
         
         // Currency 도메인
-        CurrencyRepository currencyRepository = new CurrencyRepository();
-        CurrencyService currencyService = new CurrencyService(
-            serviceFactory.getPool(),
-            currencyRepository
-        );
-        CurrencyHandler currencyHandler = new CurrencyHandler(
-            vertx,
-            currencyService
-        );
-        mainRouter.mountSubRouter("/api/v1/currencies", currencyHandler.getRouter());
+        mainRouter.mountSubRouter("/api/v1/currencies", serviceFactory.getCurrencyHandler(vertx).getRouter());
         
-        log.info("Routers registered");
+        log.info("Routers registered via DI Container");
     }
     
     protected ServiceFactory getServiceFactory() {

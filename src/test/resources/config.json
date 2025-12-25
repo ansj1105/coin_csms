@@ -6,9 +6,9 @@
     "database": {
       "host": "localhost",
       "port": 5432,
-      "database": "csms_test",
-      "user": "postgres",
-      "password": "postgres",
+      "database": "coin_system_cloud",
+      "user": "foxya",
+      "password": "foxya1124!@",
       "pool_size": 5
     },
     "jwt": {
@@ -24,9 +24,9 @@
       "maxPoolSize": 5
     },
     "flyway": {
-      "url": "jdbc:postgresql://localhost:5432/csms_test",
-      "user": "postgres",
-      "password": "postgres"
+      "url": "jdbc:postgresql://localhost:5432/coin_system_cloud",
+      "user": "foxya",
+      "password": "foxya1124!@"
     }
   }
 }

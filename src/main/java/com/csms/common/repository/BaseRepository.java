@@ -63,6 +63,14 @@ public abstract class BaseRepository {
         return hasColumn(row, column) ? row.getLocalDateTime(column) : null;
     }
     
+    /**
+     * 성공한 Future<Void>를 반환
+     * @return 성공한 Future<Void>
+     */
+    protected Future<Void> succeededVoid() {
+        return Future.succeededFuture();
+    }
+    
     protected LocalDate getLocalDate(Row row, String column) {
         if (!hasColumn(row, column)) {
             return null;
