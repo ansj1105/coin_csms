@@ -332,7 +332,10 @@ SELECT
 FROM users u
 CROSS JOIN currency c
 WHERE u.login_id = 'testuser1' AND c.code = 'TRX' AND c.chain = 'TRON'
-ON CONFLICT (user_id, currency_id) DO NOTHING;
+ON CONFLICT (user_id, currency_id) DO UPDATE SET 
+    address = EXCLUDED.address,
+    balance = EXCLUDED.balance,
+    updated_at = NOW();
 
 INSERT INTO user_wallets (user_id, currency_id, address, balance, created_at, updated_at)
 SELECT 
@@ -345,7 +348,10 @@ SELECT
 FROM users u
 CROSS JOIN currency c
 WHERE u.login_id = 'testuser1' AND c.code = 'USDT' AND c.chain = 'TRON'
-ON CONFLICT (user_id, currency_id) DO NOTHING;
+ON CONFLICT (user_id, currency_id) DO UPDATE SET 
+    address = EXCLUDED.address,
+    balance = EXCLUDED.balance,
+    updated_at = NOW();
 
 -- 외부 전송 데이터 (오늘) - wallet_id는 user_wallets에서 가져옴
 INSERT INTO external_transfers (transfer_id, user_id, wallet_id, currency_id, to_address, amount, fee, network_fee, chain, status, created_at)

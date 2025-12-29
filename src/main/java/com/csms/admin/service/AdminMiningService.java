@@ -418,7 +418,7 @@ public class AdminMiningService extends BaseService {
         )
         .map(miningRecordList -> {
             try {
-                List<MiningRecordListDto.MiningRecord> records = miningRecordList.getRecords() != null 
+                List<MiningRecordDto> records = miningRecordList.getRecords() != null 
                     ? miningRecordList.getRecords() 
                     : new ArrayList<>();
                 log.debug("Creating Excel file for {} records", records.size());

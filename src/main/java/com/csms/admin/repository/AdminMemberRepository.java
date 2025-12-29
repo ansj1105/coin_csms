@@ -398,10 +398,9 @@ public class AdminMemberRepository extends BaseRepository {
             UPDATE user_wallets w
             SET balance = balance + :adjust_amount,
                 updated_at = NOW()
-            WHERE w.user_id = :user_id
-            AND w.currency_id IN (
-                SELECT id FROM currency c
-                WHERE 1=1
+            FROM currency c
+            WHERE w.currency_id = c.id
+            AND w.user_id = :user_id
             """);
         
         Map<String, Object> params = new HashMap<>();
@@ -420,8 +419,6 @@ public class AdminMemberRepository extends BaseRepository {
             sql.append(" AND c.code = :token");
             params.put("token", token);
         }
-        
-        sql.append(")");
         
         return query(client, sql.toString(), params)
             .map(updateResult -> {
