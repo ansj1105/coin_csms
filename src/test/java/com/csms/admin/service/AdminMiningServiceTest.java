@@ -153,9 +153,9 @@ class AdminMiningServiceTest {
             eq(0),
             any(),
             any(),
-            anyString(),
-            anyString(),
-            anyString()
+            nullable(String.class),
+            nullable(String.class),
+            nullable(String.class)
         )).thenReturn(Future.succeededFuture(miningRecordList));
         
         // When
@@ -171,9 +171,9 @@ class AdminMiningServiceTest {
                         eq(0),
                         any(),
                         any(),
-                        anyString(),
-                        anyString(),
-                        anyString()
+                        nullable(String.class),
+                        nullable(String.class),
+                        nullable(String.class)
                     );
                 });
                 context.completeNow();
@@ -194,11 +194,11 @@ class AdminMiningServiceTest {
             anySqlClient(),
             eq(Integer.MAX_VALUE),
             eq(0),
-            anyString(),
-            anyString(),
-            anyString(),
-            anyString(),
-            anyString()
+            nullable(String.class),
+            nullable(String.class),
+            nullable(String.class),
+            nullable(String.class),
+            nullable(String.class)
         )).thenReturn(Future.succeededFuture(historyListDto));
         
         // When
@@ -212,11 +212,11 @@ class AdminMiningServiceTest {
                         anySqlClient(),
                         eq(Integer.MAX_VALUE),
                         eq(0),
-                        anyString(),
-                        anyString(),
-                        anyString(),
-                        anyString(),
-                        anyString()
+                        nullable(String.class),
+                        nullable(String.class),
+                        nullable(String.class),
+                        nullable(String.class),
+                        nullable(String.class)
                     );
                 });
                 context.completeNow();

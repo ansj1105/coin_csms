@@ -74,7 +74,7 @@ public class AdminMiningService extends BaseService {
         )
         .onSuccess(result -> {
             log.info("getMiningRecords transaction completed - total: {}, returned: {}", 
-                result.getTotal(), result.getRecords().size());
+                result.getTotal(), result.getRecords() != null ? result.getRecords().size() : 0);
         })
         .onFailure(err -> {
             log.error("getMiningRecords transaction failed - limit: {}, offset: {}, dateRange: {}", 
@@ -418,9 +418,12 @@ public class AdminMiningService extends BaseService {
         )
         .map(miningRecordList -> {
             try {
-                log.debug("Creating Excel file for {} records", miningRecordList.getRecords().size());
-                Buffer buffer = createMiningRecordsExcelFile(miningRecordList.getRecords());
-                log.info("exportMiningRecords transaction completed - records: {}", miningRecordList.getRecords().size());
+                List<MiningRecordListDto.MiningRecord> records = miningRecordList.getRecords() != null 
+                    ? miningRecordList.getRecords() 
+                    : new ArrayList<>();
+                log.debug("Creating Excel file for {} records", records.size());
+                Buffer buffer = createMiningRecordsExcelFile(records);
+                log.info("exportMiningRecords transaction completed - records: {}", records.size());
                 return buffer;
             } catch (IOException e) {
                 log.error("exportMiningRecords transaction failed - failed to create Excel file", e);
