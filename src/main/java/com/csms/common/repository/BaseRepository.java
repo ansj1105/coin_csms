@@ -183,8 +183,26 @@ public abstract class BaseRepository {
         if (!hasColumn(row, column)) {
             return null;
         }
-        LocalDateTime dateTime = row.getLocalDateTime(column);
-        return dateTime != null ? dateTime.toLocalDate() : null;
+        try {
+            // PostgreSQL DATE 타입은 LocalDate로 직접 반환됨
+            // getValue를 사용하여 타입을 자동으로 감지
+            Object value = row.getValue(column);
+            if (value == null) {
+                return null;
+            }
+            if (value instanceof LocalDate) {
+                return (LocalDate) value;
+            } else if (value instanceof LocalDateTime) {
+                return ((LocalDateTime) value).toLocalDate();
+            } else {
+                // 문자열인 경우 파싱 시도
+                log.warn("Unexpected type for LocalDate column {}: {}", column, value.getClass().getName());
+                return null;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get LocalDate from column {}: {}", column, e.getMessage());
+            return null;
+        }
     }
     
     protected JsonObject getJsonObject(Row row, String column) {

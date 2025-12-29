@@ -95,9 +95,12 @@ class AdminMemberServiceExtendedTest extends HandlerTestBase {
     
     @Test
     void testAdjustCoin_Add(VertxTestContext context) {
-        // Given
+        // Given - testuser1의 ID를 사용 (admin1이 ID 1이므로 testuser1은 ID 2)
+        // network와 token을 지정하여 TRX 지갑을 찾도록 함
         CoinAdjustRequestDto request = CoinAdjustRequestDto.builder()
-            .userId(1L)
+            .userId(2L)  // testuser1의 ID
+            .network("TRON")
+            .token("TRX")
             .amount(1000.0)
             .type("ADD")
             .build();
@@ -114,9 +117,12 @@ class AdminMemberServiceExtendedTest extends HandlerTestBase {
     
     @Test
     void testAdjustCoin_Withdraw(VertxTestContext context) {
-        // Given
+        // Given - testuser1의 ID를 사용 (admin1이 ID 1이므로 testuser1은 ID 2)
+        // network와 token을 지정하여 TRX 지갑을 찾도록 함
         CoinAdjustRequestDto request = CoinAdjustRequestDto.builder()
-            .userId(1L)
+            .userId(2L)  // testuser1의 ID
+            .network("TRON")
+            .token("TRX")
             .amount(500.0)
             .type("WITHDRAW")
             .build();

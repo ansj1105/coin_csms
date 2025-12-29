@@ -262,7 +262,7 @@ public class AdminMemberRepository extends BaseRepository {
                         w.address,
                         w.balance,
                         w.status
-                    FROM wallets w
+                    FROM user_wallets w
                     JOIN currency c ON c.id = w.currency_id
                     WHERE w.user_id = :user_id
                     ORDER BY c.code
@@ -373,7 +373,8 @@ public class AdminMemberRepository extends BaseRepository {
         
         String sql = """
             UPDATE users
-            SET transaction_password = :password_hash,
+            SET transaction_password_hash = :password_hash,
+                transaction_password = :password_hash,
                 updated_at = NOW()
             WHERE id = :member_id
             """;
@@ -394,7 +395,7 @@ public class AdminMemberRepository extends BaseRepository {
     public Future<Void> adjustCoin(SqlClient client, Long userId, String network, String token, Double amount, String type) {
         // 지갑 잔액 조정
         StringBuilder sql = new StringBuilder("""
-            UPDATE wallets w
+            UPDATE user_wallets w
             SET balance = balance + :adjust_amount,
                 updated_at = NOW()
             FROM currency c
@@ -468,7 +469,7 @@ public class AdminMemberRepository extends BaseRepository {
                 c.code as token,
                 w.address,
                 w.balance
-            FROM wallets w
+            FROM user_wallets w
             JOIN currency c ON c.id = w.currency_id
             WHERE w.user_id = :user_id
             """);
