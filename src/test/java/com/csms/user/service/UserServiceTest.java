@@ -89,7 +89,7 @@ class UserServiceTest {
         User user = User.builder()
             .id(1L)
             .loginId("testuser")
-            .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy") // "password123" 해시
+            .passwordHash("$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG") // "password123" 해시
             .status("ACTIVE")
             .build();
         
@@ -120,7 +120,7 @@ class UserServiceTest {
         User user = User.builder()
             .id(1L)
             .loginId("testuser")
-            .passwordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")
+            .passwordHash("$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG")
             .status("ACTIVE")
             .build();
         

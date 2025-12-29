@@ -9,8 +9,8 @@ import org.mindrot.jbcrypt.BCrypt;
  */
 public class VerifyPasswordHash {
     public static void main(String[] args) {
-        String password = "password123";
-        String hash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+        String password = args.length > 0 ? args[0] : "password123";
+        String hash = args.length > 1 ? args[1] : "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
         
         System.out.println("========================================");
         System.out.println("BCrypt 해시 검증");
@@ -29,7 +29,7 @@ public class VerifyPasswordHash {
             System.out.println("새 해시값: " + correctHash);
             System.out.println();
             System.out.println("SQL UPDATE 문:");
-            System.out.println("UPDATE users SET password_hash = '" + correctHash + "' WHERE login_id = 'admin1';");
+            System.out.println("UPDATE users SET password_hash = '" + correctHash + "' WHERE login_id = 'testuser';");
         }
     }
 }

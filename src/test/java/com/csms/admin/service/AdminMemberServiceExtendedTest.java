@@ -2,6 +2,7 @@ package com.csms.admin.service;
 
 import com.csms.admin.dto.*;
 import com.csms.common.HandlerTestBase;
+import com.csms.common.service.TronService;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
@@ -27,7 +28,9 @@ class AdminMemberServiceExtendedTest extends HandlerTestBase {
     
     @BeforeEach
     void setUp() {
-        service = new AdminMemberService(pool);
+        // TronService 생성 (테스트용 - URL은 빈 문자열)
+        TronService tronService = new TronService(webClient, "");
+        service = new AdminMemberService(pool, tronService);
     }
     
     @Test
