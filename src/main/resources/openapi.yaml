@@ -1533,6 +1533,665 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
 
+  /admin/funds/withdrawal-request:
+    get:
+      tags:
+        - Admin
+      summary: 출금신청 목록 조회
+      description: 출금신청 목록을 조회합니다.
+      operationId: getWithdrawalRequests
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: 페이지당 항목 수
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: 시작 위치
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [ALL, TODAY, 7, 14, 30, 180, 365, custom]
+            default: 7
+        - name: startDate
+          in: query
+          description: 시작 날짜 (YYYY-MM-DD) - dateRange가 custom일 때 필수
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: 종료 날짜 (YYYY-MM-DD) - dateRange가 custom일 때 필수
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: network
+          in: query
+          description: 네트워크 필터
+          required: false
+          schema:
+            type: string
+        - name: currencyCode
+          in: query
+          description: 자산 필터
+          required: false
+          schema:
+            type: string
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ORDER_NUMBER, ID, NICKNAME]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, REVIEW, REJECTED, APPROVED]
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalRequestListResponse'
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+  /admin/funds/withdrawal-request/{id}/status:
+    patch:
+      tags:
+        - Admin
+      summary: 출금신청 상태 업데이트
+      description: 출금신청 상태를 업데이트합니다.
+      operationId: updateWithdrawalStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 출금신청 ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWithdrawalStatusRequest'
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          description: 인증 필요
+        '404':
+          description: 출금신청을 찾을 수 없음
+
+  /admin/funds/withdrawal-request/export:
+    get:
+      tags:
+        - Admin
+      summary: 출금신청 목록 엑셀 다운로드
+      description: 출금신청 목록을 엑셀 파일로 다운로드합니다.
+      operationId: exportWithdrawalRequests
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [ALL, TODAY, 7, 14, 30, 180, 365, custom]
+        - name: startDate
+          in: query
+          description: 시작 날짜 (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: 종료 날짜 (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: network
+          in: query
+          description: 네트워크 필터
+          required: false
+          schema:
+            type: string
+        - name: currencyCode
+          in: query
+          description: 자산 필터
+          required: false
+          schema:
+            type: string
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ORDER_NUMBER, ID, NICKNAME]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, REVIEW, REJECTED, APPROVED]
+      responses:
+        '200':
+          description: 다운로드 성공
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: 인증 필요
+
+  /admin/funds/transaction-history:
+    get:
+      tags:
+        - Admin
+      summary: 거래내역 목록 조회
+      description: 거래내역 목록을 조회합니다.
+      operationId: getTransactionHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: 페이지당 항목 수
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: 시작 위치
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [ALL, TODAY, 7, 14, 30, 180, 365, custom]
+            default: 7
+        - name: startDate
+          in: query
+          description: 시작 날짜 (YYYY-MM-DD) - dateRange가 custom일 때 필수
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: 종료 날짜 (YYYY-MM-DD) - dateRange가 custom일 때 필수
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: transactionType
+          in: query
+          description: 거래 유형
+          required: false
+          schema:
+            type: string
+            enum: [ALL, WITHDRAW, TOKEN_DEPOSIT, PAYMENT_DEPOSIT, SWAP, EXCHANGE]
+        - name: currencyCode
+          in: query
+          description: 자산 필터
+          required: false
+          schema:
+            type: string
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ORDER_NUMBER, ID, NICKNAME]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, COMPLETED, REVIEW, FAILED]
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionHistoryListResponse'
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+  /admin/funds/transaction-history/export:
+    get:
+      tags:
+        - Admin
+      summary: 거래내역 목록 엑셀 다운로드
+      description: 거래내역 목록을 엑셀 파일로 다운로드합니다.
+      operationId: exportTransactionHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [ALL, TODAY, 7, 14, 30, 180, 365, custom]
+        - name: startDate
+          in: query
+          description: 시작 날짜 (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: 종료 날짜 (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: transactionType
+          in: query
+          description: 거래 유형
+          required: false
+          schema:
+            type: string
+            enum: [ALL, WITHDRAW, TOKEN_DEPOSIT, PAYMENT_DEPOSIT, SWAP, EXCHANGE]
+        - name: currencyCode
+          in: query
+          description: 자산 필터
+          required: false
+          schema:
+            type: string
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ORDER_NUMBER, ID, NICKNAME]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, COMPLETED, REVIEW, FAILED]
+      responses:
+        '200':
+          description: 다운로드 성공
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: 인증 필요
+
+  /admin/referral/transaction-history:
+    get:
+      tags:
+        - Admin
+      summary: 래퍼럴 거래내역 목록 조회
+      description: 하부 회원의 수익에 대한 커미션 보상내역을 조회합니다.
+      operationId: getReferralTransactionHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: 페이지당 항목 수
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: 시작 위치
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [7, 14, 30, 180, 365, custom]
+            default: 7
+        - name: startDate
+          in: query
+          description: 시작 날짜 (YYYY-MM-DD) - dateRange가 custom일 때 필수
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: 종료 날짜 (YYYY-MM-DD) - dateRange가 custom일 때 필수
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ID, REFERRER, INVITATION_CODE, NICKNAME, LEVEL]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: sortType
+          in: query
+          description: 정렬 타입 (내림차순)
+          required: false
+          schema:
+            type: string
+            enum: [LEVEL, TEAM_MEMBER_COUNT]
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferralTransactionHistoryListResponse'
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+  /admin/referral/transaction-history/export:
+    get:
+      tags:
+        - Admin
+      summary: 래퍼럴 거래내역 목록 엑셀 다운로드
+      description: 래퍼럴 거래내역 목록을 엑셀 파일로 다운로드합니다.
+      operationId: exportReferralTransactionHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [7, 14, 30, 180, 365, custom]
+        - name: startDate
+          in: query
+          description: 시작 날짜 (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: 종료 날짜 (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ID, REFERRER, INVITATION_CODE, NICKNAME, LEVEL]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: sortType
+          in: query
+          description: 정렬 타입
+          required: false
+          schema:
+            type: string
+            enum: [LEVEL, TEAM_MEMBER_COUNT]
+      responses:
+        '200':
+          description: 다운로드 성공
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: 인증 필요
+
+  /admin/referral/tree:
+    get:
+      tags:
+        - Admin
+      summary: 래퍼럴 트리구조 목록 조회
+      description: 래퍼럴 하부 트리구조를 나타내는 테이블을 조회합니다.
+      operationId: getReferralTree
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: 페이지당 항목 수
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: 시작 위치
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [7, 14, 30, 180, 365, custom]
+            default: 7
+        - name: startDate
+          in: query
+          description: 시작 날짜 (YYYY-MM-DD) - dateRange가 custom일 때 필수
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: 종료 날짜 (YYYY-MM-DD) - dateRange가 custom일 때 필수
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ID, REFERRER, INVITATION_CODE, NICKNAME, LEVEL]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: activityStatus
+          in: query
+          description: 활동상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ACTIVE, INACTIVE]
+        - name: sortType
+          in: query
+          description: 정렬 타입 (내림차순)
+          required: false
+          schema:
+            type: string
+            enum: [LEVEL, TEAM_MEMBER_COUNT]
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferralTreeListResponse'
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+  /admin/referral/tree/export:
+    get:
+      tags:
+        - Admin
+      summary: 래퍼럴 트리구조 목록 엑셀 다운로드
+      description: 래퍼럴 트리구조 목록을 엑셀 파일로 다운로드합니다.
+      operationId: exportReferralTree
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: dateRange
+          in: query
+          description: 조회 기간
+          required: false
+          schema:
+            type: string
+            enum: [7, 14, 30, 180, 365, custom]
+        - name: startDate
+          in: query
+          description: 시작 날짜 (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: 종료 날짜 (YYYY-MM-DD)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ID, REFERRER, INVITATION_CODE, NICKNAME, LEVEL]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: activityStatus
+          in: query
+          description: 활동상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [ALL, ACTIVE, INACTIVE]
+        - name: sortType
+          in: query
+          description: 정렬 타입
+          required: false
+          schema:
+            type: string
+            enum: [LEVEL, TEAM_MEMBER_COUNT]
+      responses:
+        '200':
+          description: 다운로드 성공
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: 인증 필요
+
 components:
   securitySchemes:
     bearerAuth:
@@ -2717,4 +3376,421 @@ components:
           minimum: 0
           example: 0.80
           description: 4~10등 각 등수당 보상 (KRWT) (선택)
+
+    WithdrawalRequestListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/WithdrawalRequestList'
+
+    WithdrawalRequestList:
+      type: object
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/WithdrawalRequest'
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+        totalWithdrawalAmount:
+          type: number
+          format: double
+          example: 10000.0
+        totalFeeRevenue:
+          type: number
+          format: double
+          example: 500.0
+
+    WithdrawalRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        orderNumber:
+          type: string
+          example: "12332412321412"
+        userId:
+          type: integer
+          format: int64
+          example: 1
+        loginId:
+          type: string
+          example: "MONEY"
+        nickname:
+          type: string
+          example: "MONEY"
+        year:
+          type: integer
+          example: 2025
+        date:
+          type: string
+          example: "10-25"
+        time:
+          type: string
+          example: "10:55"
+        type:
+          type: string
+          example: "WITHDRAW"
+        asset:
+          type: string
+          example: "USDT/TER-20"
+        network:
+          type: string
+          example: "TRON"
+        currencyCode:
+          type: string
+          example: "USDT"
+        requestAmount:
+          type: number
+          format: double
+          example: -100.0
+        spread:
+          type: number
+          format: double
+          example: 2.4
+        feeRate:
+          type: number
+          format: double
+          example: 0.4
+        realtimePrice:
+          type: number
+          format: double
+          nullable: true
+        settlementAmount:
+          type: number
+          format: double
+          example: -97.6
+        feeRevenue:
+          type: number
+          format: double
+          example: 2.4
+        walletAddress:
+          type: string
+          example: "TE_JNKF932JIF923FJID932DJMI329JI3293JFSEIKFSK"
+        status:
+          type: string
+          example: "REVIEW"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-10-25T10:55:00Z"
+
+    UpdateWithdrawalStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [APPROVED, REJECTED]
+          example: APPROVED
+
+    TransactionHistoryListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/TransactionHistoryList'
+
+    TransactionHistoryList:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionHistory'
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+        totalPaymentDepositAmount:
+          type: number
+          format: double
+          example: 1000000
+        totalTokenDepositAmount:
+          type: number
+          format: double
+          example: 500000
+        totalWithdrawalAmount:
+          type: number
+          format: double
+          example: -200000
+        totalExchangeAmount:
+          type: number
+          format: double
+          example: 300000
+        totalSwapAmount:
+          type: number
+          format: double
+          example: 400000
+        totalFeeRevenue:
+          type: number
+          format: double
+          example: 50000
+
+    TransactionHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        orderNumber:
+          type: string
+          example: "12332412321412"
+        userId:
+          type: integer
+          format: int64
+          example: 1
+        loginId:
+          type: string
+          example: "MONEY"
+        nickname:
+          type: string
+          example: "MONEY"
+        year:
+          type: integer
+          example: 2025
+        date:
+          type: string
+          example: "10-25"
+        time:
+          type: string
+          example: "10:55"
+        type:
+          type: string
+          enum: [WITHDRAW, TOKEN_DEPOSIT, PAYMENT_DEPOSIT, SWAP, EXCHANGE]
+          example: "WITHDRAW"
+        asset:
+          type: string
+          example: "USDT/TER-20"
+        network:
+          type: string
+          example: "TRON"
+        currencyCode:
+          type: string
+          example: "USDT"
+        requestAmount:
+          type: number
+          format: double
+          example: -100.0
+        spread:
+          type: number
+          format: double
+          example: 2.4
+        feeRate:
+          type: number
+          format: double
+          example: 0.4
+        realtimePrice:
+          type: number
+          format: double
+          nullable: true
+        settlementAmount:
+          type: number
+          format: double
+          example: -97.6
+        feeRevenue:
+          type: number
+          format: double
+          example: 2.4
+        walletAddress:
+          type: string
+          example: "TE_JNKF932JIF923FJID932DJMI329JI3293JFSEIKFSK"
+        status:
+          type: string
+          example: "COMPLETED"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-10-25T10:55:00Z"
+
+    ReferralTransactionHistoryListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/ReferralTransactionHistoryList'
+
+    ReferralTransactionHistoryList:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReferralTransactionHistory'
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+
+    ReferralTransactionHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 452345
+        referrerNickname:
+          type: string
+          nullable: true
+          example: "DWAJFA"
+        invitationCode:
+          type: string
+          nullable: true
+          example: "KDJKWAFG"
+        nickname:
+          type: string
+          example: "MONEY"
+        level:
+          type: integer
+          example: 1
+        teamMemberCount:
+          type: integer
+          example: 1000
+        referralRevenueBefore:
+          type: number
+          format: double
+          example: 10.0
+        referralRevenue:
+          type: number
+          format: double
+          example: 1.5
+        referralRevenueAfter:
+          type: number
+          format: double
+          example: 11.5
+        date:
+          type: string
+          example: "2025-10-10"
+        time:
+          type: string
+          example: "10:55"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-10-10T10:55:00Z"
+
+    ReferralTreeListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/ReferralTreeList'
+
+    ReferralTreeList:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReferralTreeMember'
+        total:
+          type: integer
+          example: 50
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+
+    ReferralTreeMember:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 452345
+        referrerId:
+          type: integer
+          format: int64
+          nullable: true
+        referrerNickname:
+          type: string
+          nullable: true
+          example: "MONEY"
+        invitationCode:
+          type: string
+          example: "KDJKWAFG"
+        nickname:
+          type: string
+          example: "MONEY"
+        level:
+          type: integer
+          example: 1
+        teamMemberCount:
+          type: integer
+          example: 1000
+        totalReferralRevenue:
+          type: number
+          format: double
+          nullable: true
+          example: 80.0
+          description: 상위 회원만
+        referralRevenue:
+          type: number
+          format: double
+          nullable: true
+          example: 10.0
+          description: 하부 회원만
+        referralRegistrationDate:
+          type: string
+          nullable: true
+          example: "2025-10-10"
+          description: 하부 회원만
+        referralRegistrationTime:
+          type: string
+          nullable: true
+          example: "10:55"
+          description: 하부 회원만
+        activityStatus:
+          type: string
+          example: "ACTIVE"
+        children:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ReferralTreeMember'
+          description: 상위 회원만
 

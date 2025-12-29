@@ -50,6 +50,12 @@ public interface ServiceFactory {
     
     AdminMiningRepository getAdminMiningRepository();
     
+    AdminDashboardRepository getAdminDashboardRepository();
+    
+    AdminFundsRepository getAdminFundsRepository();
+    
+    AdminReferralRepository getAdminReferralRepository();
+    
     CurrencyRepository getCurrencyRepository();
     
     // ========== Service 생성 메서드 ==========
@@ -64,6 +70,10 @@ public interface ServiceFactory {
     
     AdminMiningService getAdminMiningService();
     
+    AdminFundsService getAdminFundsService();
+    
+    AdminReferralService getAdminReferralService();
+    
     CurrencyService getCurrencyService();
     
     // ========== Handler 생성 메서드 ==========
@@ -77,6 +87,10 @@ public interface ServiceFactory {
     AdminMemberHandler getAdminMemberHandler(Vertx vertx);
     
     AdminMiningHandler getAdminMiningHandler(Vertx vertx);
+    
+    AdminFundsHandler getAdminFundsHandler(Vertx vertx);
+    
+    AdminReferralHandler getAdminReferralHandler(Vertx vertx);
     
     CurrencyHandler getCurrencyHandler(Vertx vertx);
     

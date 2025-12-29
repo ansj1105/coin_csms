@@ -1,5 +1,6 @@
 package com.csms.admin.service;
 
+import com.csms.admin.repository.AdminDashboardRepository;
 import com.csms.common.HandlerTestBase;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -26,7 +27,8 @@ class AdminDashboardServiceTest extends HandlerTestBase {
     
     @BeforeEach
     void setUp() {
-        dashboardService = new AdminDashboardService(pool);
+        AdminDashboardRepository repository = new AdminDashboardRepository();
+        dashboardService = new AdminDashboardService(pool, repository);
     }
     
     @Test

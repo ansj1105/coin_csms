@@ -103,6 +103,28 @@ class AdminMiningConditionServiceTest {
     }
     
     @Test
+    void testUpdateLevelLimit_ValidCase(VertxTestContext context) {
+        // Given
+        UpdateLevelLimitRequestDto request = UpdateLevelLimitRequestDto.builder()
+            .level(5)
+            .dailyLimit(0.002)
+            .build();
+        
+        when(repository.updateLevelLimit(anySqlClient(), eq(5), eq(0.002)))
+            .thenReturn(Future.succeededFuture());
+        
+        // When
+        service.updateLevelLimit(request)
+            .onComplete(context.succeeding(result -> {
+                // Then
+                context.verify(() -> {
+                    verify(repository, times(1)).updateLevelLimit(anySqlClient(), eq(5), eq(0.002));
+                });
+                context.completeNow();
+            }));
+    }
+    
+    @Test
     void testUpdateLevelLimit_InvalidLevel(VertxTestContext context) {
         // Given
         UpdateLevelLimitRequestDto request = UpdateLevelLimitRequestDto.builder()
@@ -117,6 +139,164 @@ class AdminMiningConditionServiceTest {
                 context.verify(() -> {
                     assertTrue(throwable instanceof IllegalArgumentException);
                     verify(repository, never()).updateLevelLimit(anySqlClient(), anyInt(), anyDouble());
+                });
+                context.completeNow();
+            }));
+    }
+    
+    @Test
+    void testUpdateLevelLimit_InvalidDailyLimit(VertxTestContext context) {
+        // Given
+        UpdateLevelLimitRequestDto request = UpdateLevelLimitRequestDto.builder()
+            .level(5)
+            .dailyLimit(-0.001) // 음수는 허용되지 않음
+            .build();
+        
+        // When
+        service.updateLevelLimit(request)
+            .onComplete(context.failing(throwable -> {
+                // Then
+                context.verify(() -> {
+                    assertTrue(throwable instanceof IllegalArgumentException);
+                    verify(repository, never()).updateLevelLimit(anySqlClient(), anyInt(), anyDouble());
+                });
+                context.completeNow();
+            }));
+    }
+    
+    @Test
+    void testUpdateLevelLimitsEnabled(VertxTestContext context) {
+        // Given
+        UpdateLevelLimitsEnabledRequestDto request = UpdateLevelLimitsEnabledRequestDto.builder()
+            .enabled(true)
+            .build();
+        
+        when(repository.updateLevelLimitsEnabled(anySqlClient(), eq(true)))
+            .thenReturn(Future.succeededFuture());
+        
+        // When
+        service.updateLevelLimitsEnabled(request)
+            .onComplete(context.succeeding(result -> {
+                // Then
+                context.verify(() -> {
+                    verify(repository, times(1)).updateLevelLimitsEnabled(anySqlClient(), eq(true));
+                });
+                context.completeNow();
+            }));
+    }
+    
+    @Test
+    void testUpdateProgressSetting_BroadcastProgressOnly(VertxTestContext context) {
+        // Given
+        UpdateProgressSettingRequestDto request = UpdateProgressSettingRequestDto.builder()
+            .broadcastProgress(UpdateProgressSettingRequestDto.BroadcastSettingUpdate.builder()
+                .isEnabled(true)
+                .timePerHour(15)
+                .coinsPerHour(0.002)
+                .build())
+            .broadcastListening(null)
+            .build();
+        
+        when(repository.updateProgressSetting(
+            anySqlClient(),
+            eq("BROADCAST_PROGRESS"),
+            eq(true),
+            eq(15),
+            eq(0.002)
+        )).thenReturn(Future.succeededFuture());
+        
+        // When
+        service.updateProgressSetting(request)
+            .onComplete(context.succeeding(result -> {
+                // Then
+                context.verify(() -> {
+                    verify(repository, times(1)).updateProgressSetting(
+                        anySqlClient(),
+                        eq("BROADCAST_PROGRESS"),
+                        eq(true),
+                        eq(15),
+                        eq(0.002)
+                    );
+                    verify(repository, never()).updateProgressSetting(
+                        anySqlClient(),
+                        eq("BROADCAST_LISTENING"),
+                        any(),
+                        any(),
+                        any()
+                    );
+                });
+                context.completeNow();
+            }));
+    }
+    
+    @Test
+    void testUpdateProgressSetting_BothSettings(VertxTestContext context) {
+        // Given
+        UpdateProgressSettingRequestDto request = UpdateProgressSettingRequestDto.builder()
+            .broadcastProgress(UpdateProgressSettingRequestDto.BroadcastSettingUpdate.builder()
+                .isEnabled(true)
+                .timePerHour(15)
+                .coinsPerHour(0.002)
+                .build())
+            .broadcastListening(UpdateProgressSettingRequestDto.BroadcastSettingUpdate.builder()
+                .isEnabled(false)
+                .timePerHour(20)
+                .coinsPerHour(0.003)
+                .build())
+            .build();
+        
+        when(repository.updateProgressSetting(
+            anySqlClient(),
+            anyString(),
+            anyBoolean(),
+            anyInt(),
+            anyDouble()
+        )).thenReturn(Future.succeededFuture());
+        
+        // When
+        service.updateProgressSetting(request)
+            .onComplete(context.succeeding(result -> {
+                // Then
+                context.verify(() -> {
+                    verify(repository, times(1)).updateProgressSetting(
+                        anySqlClient(),
+                        eq("BROADCAST_PROGRESS"),
+                        eq(true),
+                        eq(15),
+                        eq(0.002)
+                    );
+                    verify(repository, times(1)).updateProgressSetting(
+                        anySqlClient(),
+                        eq("BROADCAST_LISTENING"),
+                        eq(false),
+                        eq(20),
+                        eq(0.003)
+                    );
+                });
+                context.completeNow();
+            }));
+    }
+    
+    @Test
+    void testUpdateProgressSetting_EmptySettings(VertxTestContext context) {
+        // Given
+        UpdateProgressSettingRequestDto request = UpdateProgressSettingRequestDto.builder()
+            .broadcastProgress(null)
+            .broadcastListening(null)
+            .build();
+        
+        // When
+        service.updateProgressSetting(request)
+            .onComplete(context.succeeding(result -> {
+                // Then
+                context.verify(() -> {
+                    verify(repository, never()).updateProgressSetting(
+                        anySqlClient(),
+                        anyString(),
+                        any(),
+                        any(),
+                        any()
+                    );
                 });
                 context.completeNow();
             }));

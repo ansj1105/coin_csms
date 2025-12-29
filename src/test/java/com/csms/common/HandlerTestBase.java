@@ -66,17 +66,21 @@ public class HandlerTestBase {
         // 환경 변수나 시스템 프로퍼티로 데이터베이스 설정 오버라이드
         JsonObject dbConfig = overrideDatabaseConfig(config.getJsonObject("database"));
         
-        // Flyway 설정도 업데이트
+        // Flyway 설정도 업데이트 (URL만 database 설정에서, user/password는 flyway 설정 그대로 사용)
         JsonObject flywayConfig = config.getJsonObject("flyway");
         if (flywayConfig != null && dbConfig != null) {
             String dbHost = dbConfig.getString("host", "localhost");
             Integer dbPort = dbConfig.getInteger("port", 5432);
             String dbName = dbConfig.getString("database");
-            String dbUser = dbConfig.getString("user");
-            String dbPassword = dbConfig.getString("password");
+            // URL만 database 설정에서 가져오고, user/password는 flyway 설정의 값을 유지
+            // flyway 설정에 user/password가 없을 때만 database 설정 사용
             flywayConfig.put("url", String.format("jdbc:postgresql://%s:%d/%s", dbHost, dbPort, dbName));
-            flywayConfig.put("user", dbUser);
-            flywayConfig.put("password", dbPassword);
+            if (!flywayConfig.containsKey("user")) {
+                flywayConfig.put("user", dbConfig.getString("user"));
+            }
+            if (!flywayConfig.containsKey("password")) {
+                flywayConfig.put("password", dbConfig.getString("password"));
+            }
         }
         
         JsonObject jwtConfig = config.getJsonObject("jwt");

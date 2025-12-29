@@ -38,6 +38,9 @@ public class DefaultServiceFactory implements ServiceFactory {
     private AdminRepository adminRepository;
     private AdminMemberRepository adminMemberRepository;
     private AdminMiningRepository adminMiningRepository;
+    private AdminDashboardRepository adminDashboardRepository;
+    private AdminFundsRepository adminFundsRepository;
+    private AdminReferralRepository adminReferralRepository;
     private CurrencyRepository currencyRepository;
     
     private UserService userService;
@@ -45,6 +48,8 @@ public class DefaultServiceFactory implements ServiceFactory {
     private AdminDashboardService adminDashboardService;
     private AdminMemberService adminMemberService;
     private AdminMiningService adminMiningService;
+    private AdminFundsService adminFundsService;
+    private AdminReferralService adminReferralService;
     private CurrencyService currencyService;
     
     public DefaultServiceFactory(Vertx vertx, JsonObject config, PgPool pool, JWTAuth jwtAuth, WebClient webClient) {
@@ -146,6 +151,30 @@ public class DefaultServiceFactory implements ServiceFactory {
     }
     
     @Override
+    public AdminDashboardRepository getAdminDashboardRepository() {
+        if (adminDashboardRepository == null) {
+            adminDashboardRepository = new AdminDashboardRepository();
+        }
+        return adminDashboardRepository;
+    }
+    
+    @Override
+    public AdminFundsRepository getAdminFundsRepository() {
+        if (adminFundsRepository == null) {
+            adminFundsRepository = new AdminFundsRepository();
+        }
+        return adminFundsRepository;
+    }
+    
+    @Override
+    public AdminReferralRepository getAdminReferralRepository() {
+        if (adminReferralRepository == null) {
+            adminReferralRepository = new AdminReferralRepository();
+        }
+        return adminReferralRepository;
+    }
+    
+    @Override
     public CurrencyRepository getCurrencyRepository() {
         if (currencyRepository == null) {
             currencyRepository = new CurrencyRepository();
@@ -186,7 +215,10 @@ public class DefaultServiceFactory implements ServiceFactory {
     @Override
     public AdminDashboardService getAdminDashboardService() {
         if (adminDashboardService == null) {
-            adminDashboardService = new AdminDashboardService(pool);
+            adminDashboardService = new AdminDashboardService(
+                pool,
+                getAdminDashboardRepository()
+            );
         }
         return adminDashboardService;
     }
@@ -208,6 +240,22 @@ public class DefaultServiceFactory implements ServiceFactory {
             );
         }
         return adminMiningService;
+    }
+    
+    @Override
+    public AdminFundsService getAdminFundsService() {
+        if (adminFundsService == null) {
+            adminFundsService = new AdminFundsService(pool);
+        }
+        return adminFundsService;
+    }
+    
+    @Override
+    public AdminReferralService getAdminReferralService() {
+        if (adminReferralService == null) {
+            adminReferralService = new AdminReferralService(pool);
+        }
+        return adminReferralService;
     }
     
     @Override
@@ -262,6 +310,24 @@ public class DefaultServiceFactory implements ServiceFactory {
         return new AdminMiningHandler(
             vertx,
             getAdminMiningService()
+        );
+    }
+    
+    @Override
+    public AdminFundsHandler getAdminFundsHandler(Vertx vertx) {
+        return new AdminFundsHandler(
+            vertx,
+            getAdminFundsService(),
+            jwtAuth
+        );
+    }
+    
+    @Override
+    public AdminReferralHandler getAdminReferralHandler(Vertx vertx) {
+        return new AdminReferralHandler(
+            vertx,
+            getAdminReferralService(),
+            jwtAuth
         );
     }
     

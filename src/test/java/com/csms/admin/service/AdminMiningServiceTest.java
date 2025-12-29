@@ -1,7 +1,9 @@
 package com.csms.admin.service;
 
+import com.csms.admin.dto.MiningHistoryListDto;
 import com.csms.admin.dto.MiningRecordListDto;
 import com.csms.admin.repository.AdminMiningRepository;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.Future;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -11,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.ArrayList;
 
 import static com.csms.common.TestArgumentMatchers.anySqlClient;
 import static org.junit.jupiter.api.Assertions.*;
@@ -128,6 +132,92 @@ class AdminMiningServiceTest {
                 context.verify(() -> {
                     assertNotNull(result);
                     verify(repository, times(1)).getMiningRecords(anySqlClient(), anyInt(), anyInt(), any(), any(), anyString(), eq("a".repeat(20)), anyString());
+                });
+                context.completeNow();
+            }));
+    }
+    
+    @Test
+    void testExportMiningRecords(VertxTestContext context) {
+        // Given
+        MiningRecordListDto miningRecordList = MiningRecordListDto.builder()
+            .total(2)
+            .limit(Integer.MAX_VALUE)
+            .offset(0)
+            .records(new ArrayList<>())
+            .build();
+        
+        when(repository.getMiningRecords(
+            anySqlClient(),
+            eq(Integer.MAX_VALUE),
+            eq(0),
+            any(),
+            any(),
+            anyString(),
+            anyString(),
+            anyString()
+        )).thenReturn(Future.succeededFuture(miningRecordList));
+        
+        // When
+        service.exportMiningRecords("7", null, null, "ALL", null, "ALL")
+            .onComplete(context.succeeding(result -> {
+                // Then
+                context.verify(() -> {
+                    assertNotNull(result);
+                    assertTrue(result instanceof Buffer);
+                    verify(repository, times(1)).getMiningRecords(
+                        anySqlClient(),
+                        eq(Integer.MAX_VALUE),
+                        eq(0),
+                        any(),
+                        any(),
+                        anyString(),
+                        anyString(),
+                        anyString()
+                    );
+                });
+                context.completeNow();
+            }));
+    }
+    
+    @Test
+    void testExportMiningHistoryList(VertxTestContext context) {
+        // Given
+        MiningHistoryListDto historyListDto = MiningHistoryListDto.builder()
+            .total(2)
+            .limit(Integer.MAX_VALUE)
+            .offset(0)
+            .items(new ArrayList<>())
+            .build();
+        
+        when(repository.getMiningHistoryList(
+            anySqlClient(),
+            eq(Integer.MAX_VALUE),
+            eq(0),
+            anyString(),
+            anyString(),
+            anyString(),
+            anyString(),
+            anyString()
+        )).thenReturn(Future.succeededFuture(historyListDto));
+        
+        // When
+        service.exportMiningHistoryList("ALL", null, null, "ALL", "ALL")
+            .onComplete(context.succeeding(result -> {
+                // Then
+                context.verify(() -> {
+                    assertNotNull(result);
+                    assertTrue(result instanceof Buffer);
+                    verify(repository, times(1)).getMiningHistoryList(
+                        anySqlClient(),
+                        eq(Integer.MAX_VALUE),
+                        eq(0),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString()
+                    );
                 });
                 context.completeNow();
             }));
