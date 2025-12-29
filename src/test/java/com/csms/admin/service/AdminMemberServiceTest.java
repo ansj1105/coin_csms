@@ -30,8 +30,9 @@ class AdminMemberServiceTest extends HandlerTestBase {
     
     @BeforeEach
     void setUp() {
-        // TronService 생성 (테스트용 - URL은 빈 문자열)
-        TronService tronService = new TronService(webClient, "");
+        // TronService 생성 (테스트용 - 더미 URL 제공, 실제 호출은 안 되지만 에러 방지)
+        // 테스트 데이터에 이미 지갑이 있으므로 실제로 호출되지 않음
+        TronService tronService = new TronService(webClient, "http://test-tron-service:3000");
         service = new AdminMemberService(pool, tronService);
     }
     
