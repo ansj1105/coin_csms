@@ -41,12 +41,23 @@ public class AdminAuthService extends BaseService {
         log.info("Admin login attempt - adminId: {}, ip: {}", dto.getId(), clientIp);
         
         // Rate Limiting 체크 (5회 실패 시 30분 차단)
+        Future<Boolean> rateLimitCheck;
         if (rateLimiter == null) {
-            // Redis 연결 실패 시 Rate Limiting 없이 진행
+            // Redis 연결 실패 시 Rate Limiting 없이 진행 (허용)
             log.warn("RateLimiter not available, skipping rate limit check - adminId: {}, ip: {}", 
                 dto.getId(), clientIp);
+            rateLimitCheck = Future.succeededFuture(true);
         } else {
-            return rateLimiter.checkAdminLoginAttempt(clientIp)
+            rateLimitCheck = rateLimiter.checkAdminLoginAttempt(clientIp)
+                .recover(err -> {
+                    log.error("Rate limiter check failed, allowing login - adminId: {}, ip: {}", 
+                        dto.getId(), clientIp, err);
+                    // Redis 오류 시 허용 (fail-open)
+                    return Future.succeededFuture(true);
+                });
+        }
+        
+        return rateLimitCheck
             .compose(allowed -> {
                 if (!allowed) {
                     log.warn("Admin login blocked by rate limiter - adminId: {}, ip: {}", 
@@ -60,7 +71,9 @@ public class AdminAuthService extends BaseService {
                         if (admin == null) {
                             log.warn("Admin login failed - admin not found - adminId: {}, ip: {}", 
                                 dto.getId(), clientIp);
-                            rateLimiter.recordAdminLoginFailure(clientIp);
+                            if (rateLimiter != null) {
+                                rateLimiter.recordAdminLoginFailure(clientIp);
+                            }
                             return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
                         }
                         
@@ -68,7 +81,9 @@ public class AdminAuthService extends BaseService {
                         if (!BCrypt.checkpw(dto.getPassword(), admin.getPasswordHash())) {
                             log.warn("Admin login failed - invalid password - adminId: {}, ip: {}", 
                                 dto.getId(), clientIp);
-                            rateLimiter.recordAdminLoginFailure(clientIp);
+                            if (rateLimiter != null) {
+                                rateLimiter.recordAdminLoginFailure(clientIp);
+                            }
                             return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
                         }
                         
@@ -79,7 +94,9 @@ public class AdminAuthService extends BaseService {
                         String accessToken = AuthUtils.generateToken(jwtAuth, admin.getId(), adminRole, 3600);
                         
                         // 성공 시 실패 카운트 리셋
-                        rateLimiter.resetAdminLoginFailure(clientIp);
+                        if (rateLimiter != null) {
+                            rateLimiter.resetAdminLoginFailure(clientIp);
+                        }
                         
                         // 관리자 로그인 로깅
                         log.info("Admin login successful - adminId: {}, role: {}, ip: {}", 
@@ -91,45 +108,7 @@ public class AdminAuthService extends BaseService {
                                 .adminId(admin.getLoginId())
                                 .build()
                         );
-                    })
-                    .onFailure(err -> {
-                        log.error("Admin login failed - adminId: {}, ip: {}", dto.getId(), clientIp, err);
                     });
-            });
-        }
-        
-        // RateLimiter가 null일 때는 바로 로그인 처리
-        return adminRepository.getAdminByLoginId(client, dto.getId())
-            .compose(admin -> {
-                if (admin == null) {
-                    log.warn("Admin login failed - admin not found - adminId: {}, ip: {}", 
-                        dto.getId(), clientIp);
-                    return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
-                }
-                
-                // 비밀번호 검증
-                if (!BCrypt.checkpw(dto.getPassword(), admin.getPasswordHash())) {
-                    log.warn("Admin login failed - invalid password - adminId: {}, ip: {}", 
-                        dto.getId(), clientIp);
-                    return Future.failedFuture(new UnauthorizedException("Invalid admin credentials"));
-                }
-                
-                // 관리자 권한 확인
-                UserRole adminRole = admin.getRole() == 3 ? UserRole.SUPER_ADMIN : UserRole.ADMIN;
-                
-                // 관리자 토큰 생성 (1시간 만료)
-                String accessToken = AuthUtils.generateToken(jwtAuth, admin.getId(), adminRole, 3600);
-                
-                // 관리자 로그인 로깅
-                log.info("Admin login successful - adminId: {}, role: {}, ip: {}", 
-                    admin.getId(), adminRole, clientIp);
-                
-                return Future.succeededFuture(
-                    AdminLoginResponseDto.builder()
-                        .accessToken(accessToken)
-                        .adminId(admin.getLoginId())
-                        .build()
-                );
             })
             .onFailure(err -> {
                 log.error("Admin login failed - adminId: {}, ip: {}", dto.getId(), clientIp, err);

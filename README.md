@@ -57,6 +57,24 @@ com.csms/
   - 설치 가이드: [docs/DOCKER_INSTALLATION_WINDOWS.md](docs/DOCKER_INSTALLATION_WINDOWS.md)
   - 설치 후 Docker Desktop을 실행해야 합니다 (시스템 트레이에 고래 아이콘 확인)
 
+### 데이터베이스 권한 설정
+
+테스트 실행 전에 테스트 DB 사용자에게 권한을 부여해야 합니다.
+
+```sql
+-- postgres superuser로 실행
+\i scripts/grant-test-db-permissions.sql
+
+-- 또는 직접 실행
+psql -U postgres -d coin_system_cloud -f scripts/grant-test-db-permissions.sql
+```
+
+**주의**: 테스트 DB(`coin_system_cloud`)에 `foxya` 사용자가 존재해야 합니다. 없으면 먼저 생성하세요:
+
+```sql
+CREATE USER foxya WITH PASSWORD 'foxya1124!@';
+```
+
 ### Redis Cluster 설정
 
 프로젝트는 Redis Cluster 모드를 사용합니다. 로컬 테스트를 위해 Redis Cluster를 시작해야 합니다.
