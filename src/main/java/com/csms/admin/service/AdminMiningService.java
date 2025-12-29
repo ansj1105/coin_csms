@@ -382,7 +382,7 @@ public class AdminMiningService extends BaseService {
         )
         .onSuccess(result -> {
             log.info("getMiningHistoryList transaction completed - total: {}, returned: {}", 
-                result.getTotal(), result.getItems().size());
+                result.getTotal(), result.getItems() != null ? result.getItems().size() : 0);
         })
         .onFailure(err -> {
             log.error("getMiningHistoryList transaction failed - limit: {}, offset: {}", finalLimit, finalOffset, err);
@@ -452,9 +452,9 @@ public class AdminMiningService extends BaseService {
         )
         .map(listDto -> {
             try {
-                log.debug("Creating Excel file for {} items", listDto.getItems().size());
+                log.debug("Creating Excel file for {} items", listDto.getItems() != null ? listDto.getItems().size() : 0);
                 Buffer buffer = createMiningHistoryListExcelFile(listDto);
-                log.info("exportMiningHistoryList transaction completed - items: {}", listDto.getItems().size());
+                log.info("exportMiningHistoryList transaction completed - items: {}", listDto.getItems() != null ? listDto.getItems().size() : 0);
                 return buffer;
             } catch (IOException e) {
                 log.error("exportMiningHistoryList transaction failed - failed to create Excel file", e);
@@ -622,34 +622,36 @@ public class AdminMiningService extends BaseService {
         
         // 데이터 행 생성
         int rowNum = 1;
-        for (MiningHistoryListDto.MiningHistoryItem item : listDto.getItems()) {
-            Row row = sheet.createRow(rowNum++);
-            
-            int colNum = 0;
-            
-            createCell(row, colNum++, item.getId(), dataStyle);
-            createCell(row, colNum++, item.getReferrerNickname(), dataStyle);
-            createCell(row, colNum++, item.getNickname(), dataStyle);
-            createCell(row, colNum++, item.getMiningEfficiency(), dataStyle);
-            createCell(row, colNum++, item.getLevel(), dataStyle);
-            createCell(row, colNum++, item.getInvitationCode(), dataStyle);
-            createCell(row, colNum++, item.getTeamMemberCount(), dataStyle);
-            
-            // 숫자 셀
-            Cell cell8 = row.createCell(colNum++);
-            cell8.setCellValue(item.getTotalMiningAmount() != null ? item.getTotalMiningAmount() : 0.0);
-            cell8.setCellStyle(numberStyle);
-            
-            Cell cell9 = row.createCell(colNum++);
-            cell9.setCellValue(item.getReferralRevenue() != null ? item.getReferralRevenue() : 0.0);
-            cell9.setCellStyle(numberStyle);
-            
-            Cell cell10 = row.createCell(colNum++);
-            cell10.setCellValue(item.getTotalMinedHoldings() != null ? item.getTotalMinedHoldings() : 0.0);
-            cell10.setCellStyle(numberStyle);
-            
-            createCell(row, colNum++, item.getActivityStatus(), dataStyle);
-            createCell(row, colNum++, item.getSanctionStatus(), dataStyle);
+        if (listDto.getItems() != null) {
+            for (MiningHistoryListDto.MiningHistoryItem item : listDto.getItems()) {
+                Row row = sheet.createRow(rowNum++);
+                
+                int colNum = 0;
+                
+                createCell(row, colNum++, item.getId(), dataStyle);
+                createCell(row, colNum++, item.getReferrerNickname(), dataStyle);
+                createCell(row, colNum++, item.getNickname(), dataStyle);
+                createCell(row, colNum++, item.getMiningEfficiency(), dataStyle);
+                createCell(row, colNum++, item.getLevel(), dataStyle);
+                createCell(row, colNum++, item.getInvitationCode(), dataStyle);
+                createCell(row, colNum++, item.getTeamMemberCount(), dataStyle);
+                
+                // 숫자 셀
+                Cell cell8 = row.createCell(colNum++);
+                cell8.setCellValue(item.getTotalMiningAmount() != null ? item.getTotalMiningAmount() : 0.0);
+                cell8.setCellStyle(numberStyle);
+                
+                Cell cell9 = row.createCell(colNum++);
+                cell9.setCellValue(item.getReferralRevenue() != null ? item.getReferralRevenue() : 0.0);
+                cell9.setCellStyle(numberStyle);
+                
+                Cell cell10 = row.createCell(colNum++);
+                cell10.setCellValue(item.getTotalMinedHoldings() != null ? item.getTotalMinedHoldings() : 0.0);
+                cell10.setCellStyle(numberStyle);
+                
+                createCell(row, colNum++, item.getActivityStatus(), dataStyle);
+                createCell(row, colNum++, item.getSanctionStatus(), dataStyle);
+            }
         }
         
         // 컬럼 너비 자동 조정
