@@ -3,6 +3,7 @@ package com.csms.core.factory;
 import com.csms.admin.handler.*;
 import com.csms.admin.repository.*;
 import com.csms.admin.service.*;
+import com.csms.common.service.TronService;
 import com.csms.common.utils.RateLimiter;
 import com.csms.currency.handler.CurrencyHandler;
 import com.csms.currency.repository.CurrencyRepository;
@@ -51,6 +52,7 @@ public class DefaultServiceFactory implements ServiceFactory {
     private AdminFundsService adminFundsService;
     private AdminReferralService adminReferralService;
     private CurrencyService currencyService;
+    private TronService tronService;
     
     public DefaultServiceFactory(Vertx vertx, JsonObject config, PgPool pool, JWTAuth jwtAuth, WebClient webClient) {
         this.vertx = vertx;
@@ -137,7 +139,7 @@ public class DefaultServiceFactory implements ServiceFactory {
     @Override
     public AdminMemberRepository getAdminMemberRepository() {
         if (adminMemberRepository == null) {
-            adminMemberRepository = new AdminMemberRepository(pool);
+            adminMemberRepository = new AdminMemberRepository(pool, getTronService());
         }
         return adminMemberRepository;
     }
@@ -226,7 +228,7 @@ public class DefaultServiceFactory implements ServiceFactory {
     @Override
     public AdminMemberService getAdminMemberService() {
         if (adminMemberService == null) {
-            adminMemberService = new AdminMemberService(pool);
+            adminMemberService = new AdminMemberService(pool, getTronService());
         }
         return adminMemberService;
     }
@@ -267,6 +269,17 @@ public class DefaultServiceFactory implements ServiceFactory {
             );
         }
         return currencyService;
+    }
+    
+    @Override
+    public TronService getTronService() {
+        if (tronService == null) {
+            // config에서 tron-service URL 가져오기
+            JsonObject tronConfig = config.getJsonObject("tron", new JsonObject());
+            String tronServiceUrl = tronConfig.getString("serviceUrl", "");
+            tronService = new TronService(webClient, tronServiceUrl);
+        }
+        return tronService;
     }
     
     // ========== Handler 생성 메서드 ==========

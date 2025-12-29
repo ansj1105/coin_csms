@@ -46,6 +46,9 @@
       "starttls": "REQUIRED",
       "login": "LOGIN",
       "authMethods": "PLAIN"
+    },
+    "tron": {
+      "serviceUrl": "http://foxya-tron-service:3000"
     }
   },
   "prod": {
@@ -94,6 +97,9 @@
       "starttls": "REQUIRED",
       "login": "LOGIN",
       "authMethods": "PLAIN"
+    },
+    "tron": {
+      "serviceUrl": "http://foxya-tron-service:3000"
     }
   }
 }

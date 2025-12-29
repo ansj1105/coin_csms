@@ -3,6 +3,7 @@ package com.csms.admin.service;
 import com.csms.admin.dto.*;
 import com.csms.admin.repository.AdminMemberRepository;
 import com.csms.common.service.BaseService;
+import com.csms.common.service.TronService;
 import com.csms.common.utils.DateUtils;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
@@ -23,10 +24,12 @@ import java.util.List;
 public class AdminMemberService extends com.csms.common.service.BaseService {
     
     private final AdminMemberRepository repository;
+    private final TronService tronService;
     
-    public AdminMemberService(PgPool pool) {
+    public AdminMemberService(PgPool pool, TronService tronService) {
         super(pool);
-        this.repository = new AdminMemberRepository(pool);
+        this.repository = new AdminMemberRepository(pool, tronService);
+        this.tronService = tronService;
     }
     
     public Future<MemberListDto> getMembers(

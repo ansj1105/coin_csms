@@ -7,6 +7,7 @@ import com.csms.common.utils.RateLimiter;
 import com.csms.currency.handler.CurrencyHandler;
 import com.csms.currency.repository.CurrencyRepository;
 import com.csms.currency.service.CurrencyService;
+import com.csms.common.service.TronService;
 import com.csms.user.handler.UserHandler;
 import com.csms.user.repository.UserRepository;
 import com.csms.user.service.UserService;
@@ -75,6 +76,8 @@ public interface ServiceFactory {
     AdminReferralService getAdminReferralService();
     
     CurrencyService getCurrencyService();
+    
+    TronService getTronService();
     
     // ========== Handler 생성 메서드 ==========
     

@@ -5,9 +5,11 @@ import com.csms.admin.dto.MemberListDto;
 import com.csms.admin.dto.MiningHistoryDetailDto;
 import com.csms.common.database.RowMapper;
 import com.csms.common.repository.BaseRepository;
+import com.csms.common.service.TronService;
 import io.vertx.core.Future;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.SqlClient;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -16,12 +18,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class AdminMemberRepository extends BaseRepository {
     
     private final PgPool pool;
+    private final TronService tronService;
     
     public AdminMemberRepository(PgPool pool) {
         this.pool = pool;
+        this.tronService = null; // ServiceFactory에서 주입 필요
+    }
+    
+    public AdminMemberRepository(PgPool pool, TronService tronService) {
+        this.pool = pool;
+        this.tronService = tronService;
     }
     
     public Future<MemberListDto> getMembers(
@@ -394,6 +404,7 @@ public class AdminMemberRepository extends BaseRepository {
     
     public Future<Void> adjustCoin(SqlClient client, Long userId, String network, String token, Double amount, String type) {
         // 지갑 잔액 조정
+        // PostgreSQL UPDATE 문에서 FROM 절을 사용할 때는 WHERE 절에서 JOIN 조건을 명시해야 함
         StringBuilder sql = new StringBuilder("""
             UPDATE user_wallets w
             SET balance = balance + :adjust_amount,
@@ -413,19 +424,99 @@ public class AdminMemberRepository extends BaseRepository {
         if (network != null && !network.isEmpty()) {
             sql.append(" AND c.chain = :network");
             params.put("network", network);
+        } else {
+            // network가 null이면 모든 체인 허용 (조건 추가 안 함)
         }
         
         if (token != null && !token.isEmpty()) {
             sql.append(" AND c.code = :token");
             params.put("token", token);
+        } else {
+            // token이 null이면 모든 토큰 허용 (조건 추가 안 함)
         }
         
         return query(client, sql.toString(), params)
-            .map(updateResult -> {
+            .compose(updateResult -> {
                 if (updateResult.rowCount() == 0) {
-                    throw new com.csms.common.exceptions.NotFoundException("Wallet not found");
+                    // 지갑이 없으면 자동으로 생성
+                    if (network != null && !network.isEmpty() && token != null && !token.isEmpty()) {
+                        return createWalletIfNotExists(client, userId, network, token)
+                            .compose(v -> {
+                                // 지갑 생성 후 다시 업데이트 시도
+                                return query(client, sql.toString(), params)
+                                    .map(retryResult -> {
+                                        if (retryResult.rowCount() == 0) {
+                                            throw new com.csms.common.exceptions.NotFoundException(
+                                                String.format("Wallet not found for userId=%d, network=%s, token=%s", 
+                                                    userId, network, token));
+                                        }
+                                        return null;
+                                    });
+                            });
+                    } else {
+                        throw new com.csms.common.exceptions.NotFoundException(
+                            String.format("Wallet not found for userId=%d, network=%s, token=%s", 
+                                userId, network, token));
+                    }
                 }
-                return null;
+                return Future.succeededFuture((Void) null);
+            });
+    }
+    
+    private Future<Void> createWalletIfNotExists(SqlClient client, Long userId, String network, String token) {
+        // 1. 통화 조회
+        String getCurrencySql = """
+            SELECT id FROM currency
+            WHERE chain = :network AND code = :token
+            """;
+        Map<String, Object> currencyParams = new HashMap<>();
+        currencyParams.put("network", network);
+        currencyParams.put("token", token);
+        
+        return query(client, getCurrencySql, currencyParams)
+            .compose(currencyRows -> {
+                if (currencyRows.size() == 0) {
+                    return Future.failedFuture(new com.csms.common.exceptions.NotFoundException(
+                        String.format("Currency not found for network=%s, token=%s", network, token)));
+                }
+                
+                Long currencyId = getLong(currencyRows.iterator().next(), "id");
+                
+                // 2. 지갑 주소 생성 (TronService 사용)
+                if (tronService == null) {
+                    return Future.failedFuture(new com.csms.common.exceptions.InternalServerException(
+                        "TronService가 초기화되지 않았습니다. foxya-tron-service 설정을 확인해주세요."));
+                }
+                
+                if (!("TRON".equalsIgnoreCase(network) || "BTC".equalsIgnoreCase(network) || "ETH".equalsIgnoreCase(network))) {
+                    return Future.failedFuture(new com.csms.common.exceptions.BadRequestException(
+                        String.format("블록체인 네트워크(%s)는 지갑 자동 생성을 지원하지 않습니다. network=%s, token=%s", 
+                            network, network, token)));
+                }
+                
+                // 블록체인 서비스 호출
+                return tronService.createWallet(userId, token)
+                    .compose(address -> {
+                        // 3. 지갑 생성
+                        String insertSql = """
+                            INSERT INTO user_wallets (user_id, currency_id, address, balance, created_at, updated_at)
+                            VALUES (:user_id, :currency_id, :address, 0.0, NOW(), NOW())
+                            ON CONFLICT (user_id, currency_id) DO UPDATE SET 
+                                address = EXCLUDED.address,
+                                updated_at = NOW()
+                            """;
+                        Map<String, Object> insertParams = new HashMap<>();
+                        insertParams.put("user_id", userId);
+                        insertParams.put("currency_id", currencyId);
+                        insertParams.put("address", address);
+                        
+                        return query(client, insertSql, insertParams)
+                            .map(result -> {
+                                log.info("지갑 생성 완료 - userId: {}, network: {}, token: {}, address: {}", 
+                                    userId, network, token, address);
+                                return null;
+                            });
+                    });
             });
     }
     

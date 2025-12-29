@@ -115,7 +115,7 @@ class AdminMiningBoosterServiceTest {
             .onComplete(context.succeeding(result -> {
                 // Then
                 context.verify(() -> {
-                    verify(repository, times(1)).updateBooster(anySqlClient(), anyString(), anyBoolean(), anyInt(), anyInt(), anyInt());
+                    verify(repository, times(1)).updateBooster(anySqlClient(), anyString(), anyBoolean(), nullable(Integer.class), anyInt(), anyInt());
                 });
                 context.completeNow();
             }));
