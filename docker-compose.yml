@@ -13,11 +13,11 @@ services:
       - ./logs:/app/logs
     networks:
       - csms-network
-      - foxya-network  # foxya의 PostgreSQL 사용을 위한 네트워크 연결
+      - fox_coin_foxya-network  # foxya의 PostgreSQL/Redis 사용을 위한 네트워크 연결
     restart: unless-stopped
 
 networks:
   csms-network:
     driver: bridge
-  foxya-network:  # foxya 프로젝트의 네트워크 (동일 DB 사용)
+  fox_coin_foxya-network:  # foxya 프로젝트의 네트워크 (동일 DB/Redis 사용)
     external: true
