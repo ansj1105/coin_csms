@@ -1,0 +1,106 @@
+{
+  "env": "local",
+  "local": {
+    "http": {
+      "port": 8080
+    },
+    "frontend": {
+      "baseUrl": "http://localhost:3000"
+    },
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "csms",
+      "user": "postgres",
+      "password": "postgres",
+      "pool_size": 10,
+      "idle_timeout": 60,
+      "pool_cleaner_period": 60
+    },
+    "jwt": {
+      "secret": "your-jwt-secret-key-for-csms-change-this-in-production",
+      "access_token_expire_minutes": 30,
+      "refresh_token_expire_minutes": 14400
+    },
+    "redis": {
+      "mode": "cluster",
+      "nodes": [
+        "redis://localhost:7001",
+        "redis://localhost:7002",
+        "redis://localhost:7003",
+        "redis://localhost:7004",
+        "redis://localhost:7005",
+        "redis://localhost:7006"
+      ],
+      "password": "",
+      "maxPoolSize": 8,
+      "maxPoolWaiting": 32,
+      "poolRecycleTimeout": 15000
+    },
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "username": "",
+      "password": "",
+      "from": "no-reply@csms.com",
+      "starttls": "REQUIRED",
+      "login": "LOGIN",
+      "authMethods": "PLAIN"
+    },
+    "tron": {
+      "serviceUrl": "http://foxya-tron-service:3000"
+    }
+  },
+  "prod": {
+    "http": {
+      "port": 8080
+    },
+    "frontend": {
+      "baseUrl": "http://localhost"
+    },
+    "database": {
+      "host": "postgres",
+      "port": 5432,
+      "database": "csms",
+      "user": "csms",
+      "password": "change-this",
+      "pool_size": 20,
+      "idle_timeout": 60,
+      "pool_cleaner_period": 60
+    },
+    "jwt": {
+      "secret": "your-production-jwt-secret-key-change-this",
+      "access_token_expire_minutes": 30,
+      "refresh_token_expire_minutes": 14400
+    },
+    "redis": {
+      "mode": "cluster",
+      "nodes": [
+        "redis://redis-node-1:7001",
+        "redis://redis-node-2:7002",
+        "redis://redis-node-3:7003",
+        "redis://redis-node-4:7004",
+        "redis://redis-node-5:7005",
+        "redis://redis-node-6:7006"
+      ],
+      "password": "",
+      "maxPoolSize": 16,
+      "maxPoolWaiting": 64,
+      "poolRecycleTimeout": 15000
+    },
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "username": "",
+      "password": "",
+      "from": "no-reply@csms.com",
+      "starttls": "REQUIRED",
+      "login": "LOGIN",
+      "authMethods": "PLAIN"
+    },
+    "tron": {
+      "serviceUrl": "http://foxya-tron-service:3000"
+    }
+  }
+}
+

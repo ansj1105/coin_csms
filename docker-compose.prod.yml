@@ -1,0 +1,38 @@
+services:
+  # ==================== Application ====================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+      args:
+        - APP_ENV=${APP_ENV:-prod}
+    image: csms-api:${APP_VERSION:-latest}
+    container_name: csms-api
+    environment:
+      TZ: Asia/Seoul
+      APP_ENV: ${APP_ENV:-prod}
+      # JVM
+      JAVA_OPTS: ${JAVA_OPTS:--Xmx1024m -Xms512m -XX:+UseG1GC}
+    ports:
+      - "8081:8080"  # 포트 변경 (foxya와 충돌 방지)
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - csms-network
+      - foxya-network  # foxya의 PostgreSQL 사용을 위한 네트워크 연결
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+networks:
+  csms-network:
+    driver: bridge
+  foxya-network:  # foxya 프로젝트의 네트워크 (동일 DB 사용)
+    external: true

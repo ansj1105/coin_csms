@@ -1,0 +1,23 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: csms-api
+    ports:
+      - "8081:8080"  # 포트 변경 (foxya와 충돌 방지)
+    environment:
+      TZ: Asia/Seoul
+    volumes:
+      - ./src/main/resources/config.json:/app/config.json
+      - ./logs:/app/logs
+    networks:
+      - csms-network
+      - foxya-network  # foxya의 PostgreSQL 사용을 위한 네트워크 연결
+    restart: unless-stopped
+
+networks:
+  csms-network:
+    driver: bridge
+  foxya-network:  # foxya 프로젝트의 네트워크 (동일 DB 사용)
+    external: true
