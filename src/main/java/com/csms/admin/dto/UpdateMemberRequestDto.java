@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateMemberRequestDto {
     private String phone;
-    private String email;
+    // email 컬럼이 users 테이블에 없으므로 제거
+    // private String email;
     private Integer level;
 }
 

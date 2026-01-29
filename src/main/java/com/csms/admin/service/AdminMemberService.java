@@ -107,15 +107,14 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
     }
     
     public Future<Void> updateMember(Long memberId, UpdateMemberRequestDto request) {
-        log.info("updateMember transaction started - memberId: {}, phone: {}, email: {}, level: {}", 
-            memberId, request.getPhone() != null ? "***" : null, 
-            request.getEmail() != null ? "***" : null, request.getLevel());
+        log.info("updateMember transaction started - memberId: {}, phone: {}, level: {}", 
+            memberId, request.getPhone() != null ? "***" : null, request.getLevel());
         
         return repository.updateMember(
             client,
             memberId,
             request.getPhone(),
-            request.getEmail(),
+            null, // email 컬럼이 users 테이블에 없으므로 null 전달
             request.getLevel()
         )
         .onSuccess(result -> {

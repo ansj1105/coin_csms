@@ -54,7 +54,7 @@ public class AdminMemberRepository extends BaseRepository {
                 u.id,
                 u.login_id,
                 u.nickname,
-                u.email,
+                NULL as email,
                 u.level,
                 u.referral_code as invitation_code,
                 u.status as activity_status,
@@ -106,8 +106,9 @@ public class AdminMemberRepository extends BaseRepository {
                     params.put("search_keyword_pattern", "%" + searchKeyword + "%");
                 }
                 case "EMAIL" -> {
-                    sql.append(" AND u.email ILIKE :search_keyword_pattern");
-                    params.put("search_keyword_pattern", "%" + searchKeyword + "%");
+                    // email 컬럼이 users 테이블에 없으므로 검색 제외
+                    // sql.append(" AND u.email ILIKE :search_keyword_pattern");
+                    // params.put("search_keyword_pattern", "%" + searchKeyword + "%");
                 }
                 case "LEVEL" -> {
                     try {
@@ -128,7 +129,6 @@ public class AdminMemberRepository extends BaseRepository {
                             u.id::text = :search_keyword
                             OR u.login_id ILIKE :search_keyword_pattern
                             OR u.nickname ILIKE :search_keyword_pattern
-                            OR u.email ILIKE :search_keyword_pattern
                             OR u.referral_code = :search_keyword
                             OR referrer.nickname ILIKE :search_keyword_pattern
                         )
@@ -214,7 +214,7 @@ public class AdminMemberRepository extends BaseRepository {
                 u.id,
                 u.login_id,
                 u.nickname,
-                u.email,
+                NULL as email,
                 u.level,
                 u.referral_code as invitation_code,
                 u.status as activity_status,
@@ -362,10 +362,11 @@ public class AdminMemberRepository extends BaseRepository {
             sql.append(", phone = :phone");
             params.put("phone", phone);
         }
-        if (email != null) {
-            sql.append(", email = :email");
-            params.put("email", email);
-        }
+        // email 컬럼이 users 테이블에 없으므로 업데이트 제외
+        // if (email != null) {
+        //     sql.append(", email = :email");
+        //     params.put("email", email);
+        // }
         if (level != null) {
             sql.append(", level = :level");
             params.put("level", level);
