@@ -1,5 +1,10 @@
 services:
-  # ==================== Application ====================
+  # ============================================
+  # Application Service
+  # ============================================
+  # 환경 변수는 .env 파일에서 로드됩니다
+  # 사용 방법: cp .env.example .env && docker-compose -f docker-compose.prod.yml up -d
+  # ============================================
   app:
     build:
       context: .
@@ -9,8 +14,9 @@ services:
     image: csms-api:${APP_VERSION:-latest}
     container_name: csms-api
     environment:
-      TZ: Asia/Seoul
+      TZ: ${TZ:-Asia/Seoul}
       APP_ENV: ${APP_ENV:-prod}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
       # JVM
       JAVA_OPTS: ${JAVA_OPTS:--Xmx1024m -Xms512m -XX:+UseG1GC}
     ports:

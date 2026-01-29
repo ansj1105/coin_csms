@@ -42,6 +42,7 @@ public class DefaultServiceFactory implements ServiceFactory {
     private AdminDashboardRepository adminDashboardRepository;
     private AdminFundsRepository adminFundsRepository;
     private AdminReferralRepository adminReferralRepository;
+    private AdminAirdropRepository adminAirdropRepository;
     private CurrencyRepository currencyRepository;
     
     private UserService userService;
@@ -51,6 +52,7 @@ public class DefaultServiceFactory implements ServiceFactory {
     private AdminMiningService adminMiningService;
     private AdminFundsService adminFundsService;
     private AdminReferralService adminReferralService;
+    private AdminAirdropService adminAirdropService;
     private CurrencyService currencyService;
     private TronService tronService;
     
@@ -177,6 +179,14 @@ public class DefaultServiceFactory implements ServiceFactory {
     }
     
     @Override
+    public AdminAirdropRepository getAdminAirdropRepository() {
+        if (adminAirdropRepository == null) {
+            adminAirdropRepository = new AdminAirdropRepository();
+        }
+        return adminAirdropRepository;
+    }
+    
+    @Override
     public CurrencyRepository getCurrencyRepository() {
         if (currencyRepository == null) {
             currencyRepository = new CurrencyRepository();
@@ -261,6 +271,14 @@ public class DefaultServiceFactory implements ServiceFactory {
     }
     
     @Override
+    public AdminAirdropService getAdminAirdropService() {
+        if (adminAirdropService == null) {
+            adminAirdropService = new AdminAirdropService(pool);
+        }
+        return adminAirdropService;
+    }
+    
+    @Override
     public CurrencyService getCurrencyService() {
         if (currencyService == null) {
             currencyService = new CurrencyService(
@@ -341,6 +359,14 @@ public class DefaultServiceFactory implements ServiceFactory {
             vertx,
             getAdminReferralService(),
             jwtAuth
+        );
+    }
+    
+    @Override
+    public AdminAirdropHandler getAdminAirdropHandler(Vertx vertx) {
+        return new AdminAirdropHandler(
+            vertx,
+            getAdminAirdropService()
         );
     }
     

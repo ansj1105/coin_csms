@@ -149,5 +149,29 @@ public abstract class BaseHandler {
             return defaultValue;
         }
     }
+    
+    protected Integer getQueryParamAsInteger(RoutingContext ctx, String param) {
+        String value = ctx.queryParams().get(param);
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+    
+    protected Long getQueryParamAsLong(RoutingContext ctx, String param) {
+        String value = ctx.queryParams().get(param);
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 }
 

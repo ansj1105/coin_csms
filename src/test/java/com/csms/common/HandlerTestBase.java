@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class HandlerTestBase {
     
     protected static int port = 8089;
+    protected static PgPool pool; // PgPool로 변경
     protected static io.vertx.sqlclient.SqlClient sqlClient;
     protected static JWTAuth jwtAuth;
     protected static WebClient webClient;
@@ -104,7 +105,8 @@ public class HandlerTestBase {
         PoolOptions poolOptions = new PoolOptions()
             .setMaxSize(dbConfig.getInteger("pool_size", 5));
         
-        sqlClient = PgPool.client(vertx, connectOptions, poolOptions);
+        pool = PgPool.pool(vertx, connectOptions, poolOptions); // PgPool 생성
+        sqlClient = pool; // SqlClient는 PgPool에서 가져옴
         
         testContext.verify(() -> {
             // Flyway 설정
@@ -132,6 +134,9 @@ public class HandlerTestBase {
     
     @AfterAll
     protected static void close(final Vertx vertx) {
+        if (pool != null) {
+            pool.close();
+        }
         if (sqlClient != null) {
             sqlClient.close();
         }

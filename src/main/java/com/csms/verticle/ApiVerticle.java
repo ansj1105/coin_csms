@@ -291,6 +291,7 @@ public class ApiVerticle extends AbstractVerticle {
         mainRouter.mountSubRouter("/api/v1/admin/mining", serviceFactory.getAdminMiningHandler(vertx).getRouter());
         mainRouter.mountSubRouter("/api/v1/admin/funds", serviceFactory.getAdminFundsHandler(vertx).getRouter());
         mainRouter.mountSubRouter("/api/v1/admin/referral", serviceFactory.getAdminReferralHandler(vertx).getRouter());
+        mainRouter.mountSubRouter("/api/v1/admin/airdrop", serviceFactory.getAdminAirdropHandler(vertx).getRouter());
         
         // Currency 도메인
         mainRouter.mountSubRouter("/api/v1/currencies", serviceFactory.getCurrencyHandler(vertx).getRouter());

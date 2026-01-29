@@ -57,6 +57,8 @@ public interface ServiceFactory {
     
     AdminReferralRepository getAdminReferralRepository();
     
+    AdminAirdropRepository getAdminAirdropRepository();
+    
     CurrencyRepository getCurrencyRepository();
     
     // ========== Service 생성 메서드 ==========
@@ -74,6 +76,8 @@ public interface ServiceFactory {
     AdminFundsService getAdminFundsService();
     
     AdminReferralService getAdminReferralService();
+    
+    AdminAirdropService getAdminAirdropService();
     
     CurrencyService getCurrencyService();
     
@@ -94,6 +98,8 @@ public interface ServiceFactory {
     AdminFundsHandler getAdminFundsHandler(Vertx vertx);
     
     AdminReferralHandler getAdminReferralHandler(Vertx vertx);
+    
+    AdminAirdropHandler getAdminAirdropHandler(Vertx vertx);
     
     CurrencyHandler getCurrencyHandler(Vertx vertx);
     

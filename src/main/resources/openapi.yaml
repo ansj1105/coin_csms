@@ -22,6 +22,8 @@ tags:
     description: 사용자 API
   - name: Currency
     description: 통화 API
+  - name: Airdrop
+    description: 에어드랍 관리 API
 
 paths:
   /admin/auth/login:
@@ -3794,3 +3796,508 @@ components:
             $ref: '#/components/schemas/ReferralTreeMember'
           description: 상위 회원만
 
+  # ========== 에어드랍 관리 API ==========
+  /admin/airdrop/phases:
+    get:
+      tags:
+        - Airdrop
+      summary: 에어드랍 Phase 목록 조회
+      description: 에어드랍 Phase 목록을 검색, 필터링, 페이지네이션하여 조회합니다.
+      operationId: getAirdropPhases
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: 페이지당 항목 수
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: 시작 위치
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리 (ID, NICKNAME)
+          required: false
+          schema:
+            type: string
+            enum: [ID, NICKNAME]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: userId
+          in: query
+          description: 사용자 ID 필터
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: phase
+          in: query
+          description: Phase 번호 필터 (1-5)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+        - name: status
+          in: query
+          description: 상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [PROCESSING, RELEASED]
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AirdropPhaseListResponse'
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+    post:
+      tags:
+        - Airdrop
+      summary: 에어드랍 Phase 생성
+      description: 새로운 에어드랍 Phase를 생성합니다.
+      operationId: createAirdropPhase
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAirdropPhaseRequest'
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AirdropPhaseResponse'
+        '400':
+          description: 잘못된 요청
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+  /admin/airdrop/phases/{id}:
+    get:
+      tags:
+        - Airdrop
+      summary: 에어드랍 Phase 단건 조회
+      description: 특정 에어드랍 Phase의 상세 정보를 조회합니다.
+      operationId: getAirdropPhase
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Phase ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AirdropPhaseResponse'
+        '404':
+          description: Phase를 찾을 수 없음
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+    patch:
+      tags:
+        - Airdrop
+      summary: 에어드랍 Phase 수정
+      description: 에어드랍 Phase 정보를 수정합니다.
+      operationId: updateAirdropPhase
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Phase ID
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAirdropPhaseRequest'
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AirdropPhaseResponse'
+        '404':
+          description: Phase를 찾을 수 없음
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+    delete:
+      tags:
+        - Airdrop
+      summary: 에어드랍 Phase 삭제
+      description: 에어드랍 Phase를 삭제합니다 (Soft Delete).
+      operationId: deleteAirdropPhase
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Phase ID
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 성공
+        '404':
+          description: Phase를 찾을 수 없음
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+  /admin/airdrop/transfers:
+    get:
+      tags:
+        - Airdrop
+      summary: 에어드랍 전송 내역 조회
+      description: 에어드랍 전송 내역을 검색, 필터링, 페이지네이션하여 조회합니다.
+      operationId: getAirdropTransfers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: 페이지당 항목 수
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: 시작 위치
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: searchCategory
+          in: query
+          description: 검색 카테고리 (ID, NICKNAME, TRANSFER_ID)
+          required: false
+          schema:
+            type: string
+            enum: [ID, NICKNAME, TRANSFER_ID]
+        - name: searchKeyword
+          in: query
+          description: 검색어
+          required: false
+          schema:
+            type: string
+        - name: userId
+          in: query
+          description: 사용자 ID 필터
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          description: 상태 필터
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, COMPLETED, FAILED, CANCELLED]
+      responses:
+        '200':
+          description: 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AirdropTransferListResponse'
+        '401':
+          description: 인증 필요
+        '403':
+          description: 권한 없음
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ERROR
+        message:
+          type: string
+          example: 오류 메시지
+
+    # 에어드랍 관련 스키마
+    AirdropPhaseListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/AirdropPhaseList'
+
+    AirdropPhaseList:
+      type: object
+      properties:
+        phases:
+          type: array
+          items:
+            $ref: '#/components/schemas/AirdropPhase'
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+
+    AirdropPhase:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        userId:
+          type: integer
+          format: int64
+          example: 1000
+        loginId:
+          type: string
+          example: "user1000"
+        nickname:
+          type: string
+          example: "테스트사용자"
+        phase:
+          type: integer
+          example: 1
+          description: Phase 번호 (1-5)
+        status:
+          type: string
+          enum: [PROCESSING, RELEASED]
+          example: "PROCESSING"
+        amount:
+          type: number
+          format: double
+          example: 1000.0
+        claimed:
+          type: boolean
+          example: false
+        unlockDate:
+          type: string
+          format: date-time
+          example: "2025-02-01T00:00:00Z"
+        daysRemaining:
+          type: integer
+          nullable: true
+          example: 30
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-01-01T00:00:00Z"
+
+    AirdropPhaseResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/AirdropPhase'
+
+    CreateAirdropPhaseRequest:
+      type: object
+      required:
+        - userId
+        - phase
+        - amount
+      properties:
+        userId:
+          type: integer
+          format: int64
+          example: 1000
+        phase:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 1
+        amount:
+          type: number
+          format: double
+          example: 1000.0
+        unlockDate:
+          type: string
+          format: date-time
+          example: "2025-02-01T00:00:00Z"
+          description: 언락 날짜 (unlockDate 또는 daysRemaining 중 하나 필수)
+        daysRemaining:
+          type: integer
+          example: 30
+          description: 락업 기간 일수 (unlockDate 또는 daysRemaining 중 하나 필수)
+
+    UpdateAirdropPhaseRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: double
+          example: 2000.0
+        unlockDate:
+          type: string
+          format: date-time
+          example: "2025-03-01T00:00:00Z"
+        daysRemaining:
+          type: integer
+          example: 60
+        status:
+          type: string
+          enum: [PROCESSING, RELEASED]
+          example: "PROCESSING"
+
+    AirdropTransferListResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: 요청이 완료되었습니다.
+        data:
+          $ref: '#/components/schemas/AirdropTransferList'
+
+    AirdropTransferList:
+      type: object
+      properties:
+        transfers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AirdropTransfer'
+        total:
+          type: integer
+          example: 100
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+
+    AirdropTransfer:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        transferId:
+          type: string
+          example: "transfer-12345"
+        userId:
+          type: integer
+          format: int64
+          example: 1000
+        loginId:
+          type: string
+          example: "user1000"
+        nickname:
+          type: string
+          example: "테스트사용자"
+        walletId:
+          type: integer
+          format: int64
+          example: 100
+        currencyId:
+          type: integer
+          example: 1
+        currencyCode:
+          type: string
+          example: "KRWT"
+        amount:
+          type: number
+          format: double
+          example: 1000.0
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED, CANCELLED]
+          example: "COMPLETED"
+        orderNumber:
+          type: string
+          nullable: true
+          example: "ORDER-12345"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-01-01T00:00:00Z"
