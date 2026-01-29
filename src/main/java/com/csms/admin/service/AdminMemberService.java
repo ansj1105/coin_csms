@@ -114,7 +114,6 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
             client,
             memberId,
             request.getPhone(),
-            null, // email 컬럼이 users 테이블에 없으므로 null 전달
             request.getLevel()
         )
         .onSuccess(result -> {

@@ -19,7 +19,6 @@ public class MemberDetailDto {
     private Long referrerId;
     private String referrerNickname;
     private String nickname;
-    private String email;
     private Integer level;
     private String invitationCode;
     private Integer teamMemberCount;

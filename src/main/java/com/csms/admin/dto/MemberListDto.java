@@ -28,7 +28,7 @@ public class MemberListDto {
         private Long referrerId;
         private String referrerNickname;
         private String nickname;
-        private String email;
+        private String realName;
         private Integer level;
         private String invitationCode;
         private Integer teamMemberCount;
