@@ -72,32 +72,66 @@
 
 ### 2. 잔액 조회 API
 
-**엔드포인트**: `POST /api/balance`
+**엔드포인트**: `GET /api/balance?address=T...&currencyCode=USDT`
 
-**요청 형식** (예상):
-```json
-{
-  "address": "TXYZabc123...",
-  "currencyCode": "TRX"
-}
-```
+**요청 형식**:
+- Query Parameter: `address` (필수), `currencyCode` (선택, 기본값: TRC-20)
+- 예: `GET /api/balance?address=TXYZabc123...&currencyCode=USDT`
+- 예: `GET /api/balance?address=TXYZabc123...` (currencyCode 생략 시 기본값)
 
-**응답 형식** (예상):
+**응답 형식**:
 ```json
 {
   "balance": "1000.0"
 }
 ```
 
+**구현 위치**:
+- `src/main/java/com/csms/common/service/TronService.java` - `getBalance()` 메서드
+- **수정 완료**: POST → GET 방식으로 변경, Query Parameter 사용
+
 **현재 상태**:
-- `TronService.getBalance()` 메서드는 구현되어 있으나 실제로 사용되지 않음
-- 현재는 DB에서만 잔액을 조회함
+- ✅ `TronService.getBalance()` 메서드 구현 완료 (GET 방식)
+- ⚠️ 실제로 사용되지 않음 (DB에서만 잔액 조회)
 - 블록체인에서 실제 잔액을 조회하는 기능이 필요할 수 있음
 
 **필요한 작업**:
-1. `foxya-tron-service`에 `/api/balance` 엔드포인트 구현 확인
-2. 잔액 조회 시 블록체인에서 실제 잔액을 조회하는 기능 추가 (선택사항)
-3. 테스트 코드 작성
+1. 잔액 조회 시 블록체인에서 실제 잔액을 조회하는 기능 추가 (선택사항)
+2. 테스트 코드 작성
+
+### 3. 트랜잭션 조회 API
+
+**엔드포인트**:
+- TRON: `GET /api/tx/:txHash`
+- BTC: `GET /api/tx/btc/:txHash`
+- ETH: `GET /api/tx/eth/:txHash`
+
+**요청 형식**:
+- Path Parameter: `txHash` (트랜잭션 해시)
+- Query Parameter: 없음
+
+**응답 형식** (예상):
+```json
+{
+  "txHash": "0x1234567890abcdef...",
+  "status": "confirmed",
+  "blockNumber": 12345,
+  "confirmations": 20,
+  ...
+}
+```
+
+**구현 위치**:
+- `src/main/java/com/csms/common/service/TronService.java` - `getTransaction()` 메서드
+- **추가 완료**: 통화 코드에 따라 적절한 엔드포인트 호출
+
+**현재 상태**:
+- ✅ `TronService.getTransaction()` 메서드 구현 완료
+- ⚠️ 실제로 사용되지 않음
+
+**필요한 작업**:
+1. 트랜잭션 조회 기능에서 `TronService.getTransaction()` 호출 추가
+2. 테스트 코드 작성
 
 ## 설정
 

@@ -141,7 +141,7 @@ public class TronService {
     /**
      * 잔액 조회
      * @param address 지갑 주소
-     * @param currencyCode 통화 코드
+     * @param currencyCode 통화 코드 (선택사항, null이면 기본값 TRC-20)
      * @return 잔액 (문자열로 반환, BigDecimal로 변환 필요)
      */
     public Future<String> getBalance(String address, String currencyCode) {
@@ -149,15 +149,18 @@ public class TronService {
             return Future.failedFuture("foxya-tron-service URL이 설정되지 않았습니다.");
         }
         
-        String url = tronServiceUrl + "/api/balance";
-        JsonObject requestBody = new JsonObject()
-            .put("address", address)
-            .put("currencyCode", currencyCode);
+        // GET 방식 + Query Parameter 사용 (보고서 스펙에 맞춤)
+        StringBuilder urlBuilder = new StringBuilder(tronServiceUrl + "/api/balance");
+        urlBuilder.append("?address=").append(io.vertx.core.http.HttpServerRequest.encodeURIComponent(address));
+        if (currencyCode != null && !currencyCode.isEmpty()) {
+            urlBuilder.append("&currencyCode=").append(io.vertx.core.http.HttpServerRequest.encodeURIComponent(currencyCode));
+        }
+        String url = urlBuilder.toString();
         
         log.info("foxya-tron-service 잔액 조회 호출 - URL: {}, address: {}, currencyCode: {}", url, address, currencyCode);
         
-        return webClient.postAbs(url)
-            .sendJsonObject(requestBody)
+        return webClient.getAbs(url)
+            .send()
             .compose(response -> {
                 if (response.statusCode() == 200) {
                     JsonObject body = response.bodyAsJsonObject();
@@ -187,6 +190,62 @@ public class TronService {
             })
             .recover(throwable -> {
                 log.error("foxya-tron-service 잔액 조회 네트워크 오류 - currencyCode: {}, error: {}", currencyCode, throwable.getMessage());
+                return Future.failedFuture("foxya-tron-service 연결 실패: " + throwable.getMessage());
+            });
+    }
+    
+    /**
+     * 트랜잭션 조회
+     * 보고서 스펙: GET /api/tx/:txHash (TRON), GET /api/tx/btc/:txHash (BTC), GET /api/tx/eth/:txHash (ETH)
+     * @param txHash 트랜잭션 해시
+     * @param currencyCode 통화 코드 (TRX, BTC, ETH 등)
+     * @return 트랜잭션 정보 (JSON)
+     */
+    public Future<JsonObject> getTransaction(String txHash, String currencyCode) {
+        if (tronServiceUrl == null || tronServiceUrl.isEmpty()) {
+            return Future.failedFuture("foxya-tron-service URL이 설정되지 않았습니다.");
+        }
+        
+        // 통화 코드에 따라 엔드포인트 결정
+        String endpoint;
+        if ("BTC".equalsIgnoreCase(currencyCode)) {
+            endpoint = "/api/tx/btc/" + txHash;
+        } else if ("ETH".equalsIgnoreCase(currencyCode)) {
+            endpoint = "/api/tx/eth/" + txHash;
+        } else {
+            // TRON (기본값)
+            endpoint = "/api/tx/" + txHash;
+        }
+        
+        String url = tronServiceUrl + endpoint;
+        
+        log.info("foxya-tron-service 트랜잭션 조회 호출 - URL: {}, txHash: {}, currencyCode: {}", url, txHash, currencyCode);
+        
+        return webClient.getAbs(url)
+            .send()
+            .compose(response -> {
+                if (response.statusCode() == 200) {
+                    JsonObject body = response.bodyAsJsonObject();
+                    log.info("트랜잭션 조회 성공 - currencyCode: {}, txHash: {}", currencyCode, txHash);
+                    return Future.succeededFuture(body);
+                } else {
+                    String responseBody = "";
+                    try {
+                        if (response.body() != null) {
+                            responseBody = response.bodyAsString();
+                        }
+                    } catch (Exception e) {
+                        // 응답 본문 읽기 실패 시 무시
+                    }
+                    String errorMessage = String.format("foxya-tron-service 트랜잭션 조회 실패 (status: %d, currencyCode: %s, txHash: %s, response: %s)", 
+                        response.statusCode(), currencyCode, txHash, responseBody);
+                    log.error(errorMessage);
+                    return Future.failedFuture(errorMessage);
+                }
+            })
+            .recover(throwable -> {
+                log.error("foxya-tron-service 트랜잭션 조회 네트워크 오류 - currencyCode: {}, txHash: {}, error: {}", 
+                    currencyCode, txHash, throwable.getMessage());
                 return Future.failedFuture("foxya-tron-service 연결 실패: " + throwable.getMessage());
             });
     }
