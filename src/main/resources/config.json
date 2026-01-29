@@ -79,8 +79,8 @@
       "host": "localhost",
       "port": 5432,
       "database": "coin_system_cloud",
-      "user": "an",
-      "password": "1234",
+      "user": "foxya",
+      "password": "foxya1124!@",
       "pool_size": 10,
       "idle_timeout": 60,
       "pool_cleaner_period": 60
