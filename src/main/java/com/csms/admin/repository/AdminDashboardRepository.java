@@ -87,7 +87,7 @@ public class AdminDashboardRepository extends BaseRepository {
                 Map.of("start_date", startDate, "end_date", endDate),
                 "referral_registration_count"),
             // 기타 통계들
-            getStatValue(client, "SELECT COUNT(DISTINCT u.id) as value FROM users u", Map.of(), "total_users"),
+            getStatValue(client, "SELECT COUNT(DISTINCT u.id) as value FROM users u WHERE u.deleted_at IS NULL", Map.of(), "total_users"),
             getStatValue(client, "SELECT COUNT(DISTINCT dm.user_id) as value FROM daily_mining dm WHERE dm.mining_date = CURRENT_DATE", Map.of(), "realtime_mining_users"),
             getStatValue(client,
                 "SELECT COUNT(DISTINCT mh.user_id) as value FROM mining_history mh WHERE mh.type = 'BROADCAST_PROGRESS' AND mh.created_at >= :start_date",
@@ -208,6 +208,7 @@ public class AdminDashboardRepository extends BaseRepository {
                 ROW_NUMBER() OVER (ORDER BY SUM(mh.amount) DESC) as rank
             FROM users u
             LEFT JOIN mining_history mh ON mh.user_id = u.id
+            WHERE u.deleted_at IS NULL
             GROUP BY u.id, u.login_id
             ORDER BY mined_amount DESC
             LIMIT 10
@@ -288,6 +289,7 @@ public class AdminDashboardRepository extends BaseRepository {
                 ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT rr.referred_id) DESC) as rank
             FROM users u
             LEFT JOIN referral_relations rr ON rr.referrer_id = u.id AND rr.status = 'ACTIVE'
+            WHERE u.deleted_at IS NULL
             GROUP BY u.id, u.login_id
             ORDER BY team_member_count DESC
             LIMIT 10

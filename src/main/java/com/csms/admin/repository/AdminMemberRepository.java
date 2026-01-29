@@ -86,7 +86,7 @@ public class AdminMemberRepository extends BaseRepository {
                 WHERE type IN ('BROADCAST_PROGRESS', 'BROADCAST_WATCH')
                 GROUP BY user_id
             ) mining_stats ON mining_stats.user_id = u.id
-            WHERE 1=1
+            WHERE u.deleted_at IS NULL
             """);
         
         // 검색 조건
@@ -333,6 +333,7 @@ public class AdminMemberRepository extends BaseRepository {
             SET sanction_status = :sanction_status,
                 updated_at = NOW()
             WHERE id = :member_id
+            AND deleted_at IS NULL
             """;
         
         Map<String, Object> params = new HashMap<>();
@@ -366,7 +367,7 @@ public class AdminMemberRepository extends BaseRepository {
             params.put("level", level);
         }
         
-        sql.append(" WHERE id = :member_id");
+        sql.append(" WHERE id = :member_id AND deleted_at IS NULL");
         
         return query(client, sql.toString(), params)
             .map(updateResult -> {
@@ -389,6 +390,7 @@ public class AdminMemberRepository extends BaseRepository {
                 transaction_password = :password_hash,
                 updated_at = NOW()
             WHERE id = :member_id
+            AND deleted_at IS NULL
             """;
         
         Map<String, Object> params = new HashMap<>();
@@ -529,6 +531,7 @@ public class AdminMemberRepository extends BaseRepository {
             SET kori_points = kori_points + :adjust_amount,
                 updated_at = NOW()
             WHERE id = :user_id
+            AND deleted_at IS NULL
             """);
         
         Map<String, Object> params = new HashMap<>();

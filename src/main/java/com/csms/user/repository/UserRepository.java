@@ -17,9 +17,16 @@ public class UserRepository extends BaseRepository {
         .loginId(getString(row, "login_id"))
         .passwordHash(getString(row, "password_hash"))
         .email(getString(row, "email"))
+        .nickname(getString(row, "nickname"))
+        .name(getString(row, "name"))
+        .gender(getString(row, "gender"))
+        .phone(getString(row, "phone"))
+        .referralCode(getString(row, "referral_code"))
+        .role(getInteger(row, "role"))
         .status(getString(row, "status"))
         .createdAt(getLocalDateTime(row, "created_at"))
         .updatedAt(getLocalDateTime(row, "updated_at"))
+        .deletedAt(getLocalDateTime(row, "deleted_at"))
         .build();
     
     public Future<User> createUser(SqlClient client, com.csms.user.dto.CreateUserDto dto) {
@@ -36,7 +43,9 @@ public class UserRepository extends BaseRepository {
     
     public Future<User> getUserByLoginId(SqlClient client, String loginId) {
         String sql = """
-            SELECT * FROM users WHERE login_id = :login_id
+            SELECT * FROM users 
+            WHERE login_id = :login_id 
+            AND deleted_at IS NULL
             """;
         
         return query(client, sql, Collections.singletonMap("login_id", loginId))
@@ -46,7 +55,9 @@ public class UserRepository extends BaseRepository {
     
     public Future<User> getUserById(SqlClient client, Long id) {
         String sql = """
-            SELECT * FROM users WHERE id = :id
+            SELECT * FROM users 
+            WHERE id = :id 
+            AND deleted_at IS NULL
             """;
         
         return query(client, sql, Collections.singletonMap("id", id))

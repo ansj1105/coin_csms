@@ -10,17 +10,104 @@
     "database": {
       "host": "localhost",
       "port": 5432,
-      "database": "csms",
-      "user": "postgres",
-      "password": "postgres",
+      "database": "coin_system_cloud",
+      "user": "an",
+      "password": "1234",
       "pool_size": 10,
       "idle_timeout": 60,
       "pool_cleaner_period": 60
     },
     "jwt": {
       "secret": "your-jwt-secret-key-for-csms-change-this-in-production",
-      "access_token_expire_minutes": 30,
+      "access_token_expire_minutes": 60,
       "refresh_token_expire_minutes": 14400
+    },
+    "blockchain": {
+      "tron": {
+        "fullNode": "https://api.trongrid.io",
+        "solidityNode": "https://api.trongrid.io",
+        "eventServer": "https://api.trongrid.io",
+        "apiKey": "",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      },
+      "btc": {
+        "network": "mainnet",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      },
+      "eth": {
+        "network": "mainnet",
+        "rpcUrl": "https://mainnet.infura.io/v3/d208ee1b94fd4b60ab25c8f0ec935440",
+        "etherscanApiKey": "G7G1YQTBF5BUVSS1BE8F1XBWMBDAXEP3BK",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      }
+    },
+    "redis": {
+      "mode": "standalone",
+      "host": "localhost",
+      "port": 6379,
+      "password": "",
+      "maxPoolSize": 8,
+      "maxPoolWaiting": 32
+    },
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "username": "dianainteen@gmail.com",
+      "password": "wdodlmjvijgljedk",
+      "from": "no-reply@csms.com",
+      "starttls": "REQUIRED",
+      "login": "LOGIN",
+      "authMethods": "PLAIN"
+    },
+    "monitoring": {
+      "apiKey": "your-secret-monitoring-key-here"
+    },
+    "google": {
+      "clientSecret": "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",
+      "clientId": "658980808178-dkgebjhtl42v8si66o1b521vgiq9pf4h.apps.googleusercontent.com",
+      "redirectUri": "http://localhost:3000/auth/google/callback"
+    }
+  },
+  "local-cluster": {
+    "http": {
+      "port": 8080
+    },
+    "frontend": {
+      "baseUrl": "http://localhost:3000"
+    },
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "coin_system_cloud",
+      "user": "an",
+      "password": "1234",
+      "pool_size": 10,
+      "idle_timeout": 60,
+      "pool_cleaner_period": 60
+    },
+    "jwt": {
+      "secret": "your-jwt-secret-key-for-csms-change-this-in-production",
+      "access_token_expire_minutes": 60,
+      "refresh_token_expire_minutes": 14400
+    },
+    "blockchain": {
+      "tron": {
+        "fullNode": "https://api.trongrid.io",
+        "solidityNode": "https://api.trongrid.io",
+        "eventServer": "https://api.trongrid.io",
+        "apiKey": "",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      },
+      "btc": {
+        "network": "mainnet",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      },
+      "eth": {
+        "network": "mainnet",
+        "rpcUrl": "https://mainnet.infura.io/v3/d208ee1b94fd4b60ab25c8f0ec935440",
+        "etherscanApiKey": "G7G1YQTBF5BUVSS1BE8F1XBWMBDAXEP3BK",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      }
     },
     "redis": {
       "mode": "cluster",
@@ -40,15 +127,20 @@
     "smtp": {
       "host": "smtp.gmail.com",
       "port": 587,
-      "username": "",
-      "password": "",
+      "username": "dianainteen@gmail.com",
+      "password": "wdodlmjvijgljedk",
       "from": "no-reply@csms.com",
       "starttls": "REQUIRED",
       "login": "LOGIN",
       "authMethods": "PLAIN"
     },
-    "tron": {
-      "serviceUrl": "http://foxya-tron-service:3000"
+    "monitoring": {
+      "apiKey": "your-secret-monitoring-key-here"
+    },
+    "google": {
+      "clientSecret": "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",
+      "clientId": "658980808178-dkgebjhtl42v8si66o1b521vgiq9pf4h.apps.googleusercontent.com",
+      "redirectUri": "http://localhost:3000/auth/google/callback"
     }
   },
   "prod": {
@@ -59,48 +151,136 @@
       "baseUrl": "http://localhost"
     },
     "database": {
-      "host": "postgres",
+      "host": "foxya-postgres",
       "port": 5432,
-      "database": "csms",
-      "user": "csms",
-      "password": "change-this",
+      "database": "coin_system_cloud",
+      "user": "foxya",
+      "password": "foxya1124!@",
       "pool_size": 20,
       "idle_timeout": 60,
       "pool_cleaner_period": 60
     },
     "jwt": {
       "secret": "your-production-jwt-secret-key-change-this",
-      "access_token_expire_minutes": 30,
+      "access_token_expire_minutes": 60,
       "refresh_token_expire_minutes": 14400
     },
+    "blockchain": {
+      "tron": {
+        "fullNode": "https://api.trongrid.io",
+        "solidityNode": "https://api.trongrid.io",
+        "eventServer": "https://api.trongrid.io",
+        "apiKey": "",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      },
+      "btc": {
+        "network": "mainnet",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      },
+      "eth": {
+        "network": "mainnet",
+        "rpcUrl": "https://mainnet.infura.io/v3/d208ee1b94fd4b60ab25c8f0ec935440",
+        "etherscanApiKey": "G7G1YQTBF5BUVSS1BE8F1XBWMBDAXEP3BK",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      }
+    },
     "redis": {
-      "mode": "cluster",
-      "nodes": [
-        "redis://redis-node-1:7001",
-        "redis://redis-node-2:7002",
-        "redis://redis-node-3:7003",
-        "redis://redis-node-4:7004",
-        "redis://redis-node-5:7005",
-        "redis://redis-node-6:7006"
-      ],
+      "mode": "standalone",
+      "host": "foxya-redis",
+      "port": 6379,
       "password": "",
       "maxPoolSize": 16,
-      "maxPoolWaiting": 64,
-      "poolRecycleTimeout": 15000
+      "maxPoolWaiting": 64
     },
     "smtp": {
       "host": "smtp.gmail.com",
       "port": 587,
-      "username": "",
-      "password": "",
+      "username": "dianainteen@gmail.com",
+      "password": "wdodlmjvijgljedk",
       "from": "no-reply@csms.com",
       "starttls": "REQUIRED",
       "login": "LOGIN",
       "authMethods": "PLAIN"
     },
-    "tron": {
-      "serviceUrl": "http://foxya-tron-service:3000"
+    "monitoring": {
+      "apiKey": "your-secret-monitoring-key-here"
+    },
+    "google": {
+      "clientSecret": "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",
+      "clientId": "658980808178-dkgebjhtl42v8si66o1b521vgiq9pf4h.apps.googleusercontent.com",
+      "redirectUri": "https://korion.io.kr/auth/google/callback"
+    }
+  },
+  "prod-sentinel": {
+    "http": {
+      "port": 8080
+    },
+    "frontend": {
+      "baseUrl": "http://localhost"
+    },
+    "database": {
+      "host": "foxya-postgres",
+      "port": 5432,
+      "database": "coin_system_cloud",
+      "user": "foxya",
+      "password": "foxya1124!@",
+      "pool_size": 20,
+      "idle_timeout": 60,
+      "pool_cleaner_period": 60
+    },
+    "jwt": {
+      "secret": "your-production-jwt-secret-key-change-this",
+      "access_token_expire_minutes": 60,
+      "refresh_token_expire_minutes": 14400
+    },
+    "blockchain": {
+      "tron": {
+        "fullNode": "https://api.trongrid.io",
+        "solidityNode": "https://api.trongrid.io",
+        "eventServer": "https://api.trongrid.io",
+        "apiKey": "",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      },
+      "btc": {
+        "network": "mainnet",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      },
+      "eth": {
+        "network": "mainnet",
+        "rpcUrl": "https://mainnet.infura.io/v3/d208ee1b94fd4b60ab25c8f0ec935440",
+        "etherscanApiKey": "G7G1YQTBF5BUVSS1BE8F1XBWMBDAXEP3BK",
+        "serviceUrl": "http://foxya-tron-service:3000"
+      }
+    },
+    "redis": {
+      "mode": "sentinel",
+      "masterName": "mymaster",
+      "sentinels": [
+        "redis://sentinel-1:26379",
+        "redis://sentinel-2:26379",
+        "redis://sentinel-3:26379"
+      ],
+      "password": "",
+      "maxPoolSize": 16,
+      "maxPoolWaiting": 64
+    },
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "username": "dianainteen@gmail.com",
+      "password": "wdodlmjvijgljedk",
+      "from": "no-reply@csms.com",
+      "starttls": "REQUIRED",
+      "login": "LOGIN",
+      "authMethods": "PLAIN"
+    },
+    "monitoring": {
+      "apiKey": "your-secret-monitoring-key-here"
+    },
+    "google": {
+      "clientSecret": "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",
+      "clientId": "658980808178-dkgebjhtl42v8si66o1b521vgiq9pf4h.apps.googleusercontent.com",
+      "redirectUri": "https://korion.io.kr/auth/google/callback"
     }
   }
 }
-

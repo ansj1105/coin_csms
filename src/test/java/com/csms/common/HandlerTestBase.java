@@ -21,6 +21,7 @@ import io.vertx.junit5.VertxTestContext;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.SqlClient;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.AfterAll;
@@ -35,11 +36,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class HandlerTestBase {
     
     protected static int port = 8089;
+    protected static io.vertx.sqlclient.SqlClient sqlClient;
+    protected static JWTAuth jwtAuth;
     protected static WebClient webClient;
     protected static ObjectMapper objectMapper;
-    protected static JWTAuth jwtAuth;
     protected static Flyway flyway;
-    protected static PgPool pool;
     
     protected final String apiUrl;
     
@@ -50,6 +51,7 @@ public class HandlerTestBase {
     @BeforeAll
     protected static void deployVerticle(final Vertx vertx, final VertxTestContext testContext) throws IOException {
         log.info("Test deployVerticle start");
+        ensureTestEncryptionKey();
         
         webClient = WebClient.create(vertx);
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
@@ -102,7 +104,7 @@ public class HandlerTestBase {
         PoolOptions poolOptions = new PoolOptions()
             .setMaxSize(dbConfig.getInteger("pool_size", 5));
         
-        pool = PgPool.pool(vertx, connectOptions, poolOptions);
+        sqlClient = PgPool.client(vertx, connectOptions, poolOptions);
         
         testContext.verify(() -> {
             // Flyway 설정
@@ -130,11 +132,8 @@ public class HandlerTestBase {
     
     @AfterAll
     protected static void close(final Vertx vertx) {
-        if (webClient != null) {
-            webClient.close();
-        }
-        if (pool != null) {
-            pool.close();
+        if (sqlClient != null) {
+            sqlClient.close();
         }
         vertx.close();
     }
@@ -175,35 +174,42 @@ public class HandlerTestBase {
      * GET 요청
      */
     protected HttpRequest<Buffer> reqGet(String url) {
-        return webClient.get(port, "localhost", url);
+        return withDeviceHeaders(webClient.get(port, "localhost", url));
     }
     
     /**
      * POST 요청
      */
     protected HttpRequest<Buffer> reqPost(String url) {
-        return webClient.post(port, "localhost", url);
+        return withDeviceHeaders(webClient.post(port, "localhost", url));
     }
     
     /**
      * PUT 요청
      */
     protected HttpRequest<Buffer> reqPut(String url) {
-        return webClient.put(port, "localhost", url);
+        return withDeviceHeaders(webClient.put(port, "localhost", url));
     }
     
     /**
      * DELETE 요청
      */
     protected HttpRequest<Buffer> reqDelete(String url) {
-        return webClient.delete(port, "localhost", url);
+        return withDeviceHeaders(webClient.delete(port, "localhost", url));
     }
     
     /**
      * PATCH 요청
      */
     protected HttpRequest<Buffer> reqPatch(String url) {
-        return webClient.patch(port, "localhost", url);
+        return withDeviceHeaders(webClient.patch(port, "localhost", url));
+    }
+
+    private HttpRequest<Buffer> withDeviceHeaders(HttpRequest<Buffer> request) {
+        return request
+            .putHeader("X-Device-Id", "test-device-default")
+            .putHeader("X-Device-Type", "WEB")
+            .putHeader("X-Device-Os", "WEB");
     }
     
     /**
@@ -273,9 +279,6 @@ public class HandlerTestBase {
         return dbConfig;
     }
     
-    /**
-     * Flyway 설정
-     */
     private static void configureFlyway(JsonObject flywayConfig) {
         String jdbcUrl = flywayConfig.getString("url");
         String user = flywayConfig.getString("user");
@@ -284,8 +287,8 @@ public class HandlerTestBase {
         flyway = Flyway.configure()
             .dataSource(jdbcUrl, user, password)
             .locations(
-                "filesystem:src/main/resources/db/migration",
-                "filesystem:src/test/resources/db/migration"
+                "filesystem:src/test/resources/db/migration",
+                "filesystem:src/test/resources/db/seed"
             )
             .cleanDisabled(false)
             .load();
@@ -298,6 +301,13 @@ public class HandlerTestBase {
         log.debug("TEST migration - clean and migrate");
         flyway.clean();  // 테스트마다 DB 초기화
         flyway.migrate();
+    }
+
+    private static void ensureTestEncryptionKey() {
+        String key = System.getenv("ENCRYPTION_KEY");
+        if (key == null || key.isBlank()) {
+            System.setProperty("ENCRYPTION_KEY", "test_encryption_key");
+        }
     }
 }
 

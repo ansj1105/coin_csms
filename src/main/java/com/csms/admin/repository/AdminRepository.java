@@ -26,6 +26,7 @@ public class AdminRepository extends BaseRepository {
             WHERE login_id = :login_id 
             AND role IN (2, 3)
             AND status = 'ACTIVE'
+            AND deleted_at IS NULL
             """;
         
         return query(client, sql, Collections.singletonMap("login_id", loginId))
@@ -41,6 +42,7 @@ public class AdminRepository extends BaseRepository {
             WHERE id = :id 
             AND role IN (2, 3)
             AND status = 'ACTIVE'
+            AND deleted_at IS NULL
             """;
         
         return query(client, sql, Collections.singletonMap("id", id))
