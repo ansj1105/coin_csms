@@ -57,7 +57,7 @@ public class AdminMiningRepository extends BaseRepository {
                 mh.user_id,
                 referrer.nickname as referrer_nickname,
                 u.nickname,
-                u.email,
+                NULL as email,
                 u.level,
                 mh.created_at as mining_start_time,
                 mh.updated_at as mining_end_time,
@@ -101,8 +101,9 @@ public class AdminMiningRepository extends BaseRepository {
                     params.put("search_keyword_pattern", "%" + searchKeyword + "%");
                 }
                 case "EMAIL" -> {
-                    sql.append(" AND u.email ILIKE :search_keyword_pattern");
-                    params.put("search_keyword_pattern", "%" + searchKeyword + "%");
+                    // email 컬럼이 users 테이블에 없으므로 검색 제외
+                    // sql.append(" AND u.email ILIKE :search_keyword_pattern");
+                    // params.put("search_keyword_pattern", "%" + searchKeyword + "%");
                 }
                 case "LEVEL" -> {
                     try {
@@ -144,7 +145,10 @@ public class AdminMiningRepository extends BaseRepository {
                 case "ID" -> countSql.append(" AND (u.id::text = :search_keyword OR u.login_id ILIKE :search_keyword_pattern)");
                 case "REFERRER" -> countSql.append(" AND referrer.nickname ILIKE :search_keyword_pattern");
                 case "NICKNAME" -> countSql.append(" AND u.nickname ILIKE :search_keyword_pattern");
-                case "EMAIL" -> countSql.append(" AND u.email ILIKE :search_keyword_pattern");
+                case "EMAIL" -> {
+                    // email 컬럼이 users 테이블에 없으므로 검색 제외
+                    // countSql.append(" AND u.email ILIKE :search_keyword_pattern");
+                }
                 case "LEVEL" -> {
                     try {
                         Integer level = Integer.parseInt(searchKeyword);
@@ -855,6 +859,7 @@ public class AdminMiningRepository extends BaseRepository {
     // ========== Mining History List 관련 메서드 ==========
     
     private final RowMapper<MiningHistoryListDto.MiningHistoryItem> itemMapper = row -> {
+        // sanction_status 컬럼이 users 테이블에 없으므로 NULL로 처리
         String sanctionStatus = getString(row, "sanction_status");
         if (sanctionStatus == null) {
             sanctionStatus = "NONE";
@@ -872,7 +877,7 @@ public class AdminMiningRepository extends BaseRepository {
             .referralRevenue(getDouble(row, "referral_revenue"))
             .totalMinedHoldings(getDouble(row, "total_mined_holdings"))
             .activityStatus(getString(row, "activity_status"))
-            .sanctionStatus(sanctionStatus)
+            .sanctionStatus(sanctionStatus)  // NULL로 반환됨
             .build();
     };
     
@@ -901,7 +906,7 @@ public class AdminMiningRepository extends BaseRepository {
                 COALESCE(revenue_stats.referral_revenue, 0) as referral_revenue,
                 COALESCE(mining_stats.total_mining_amount, 0) + COALESCE(revenue_stats.referral_revenue, 0) as total_mined_holdings,
                 u.status as activity_status,
-                u.sanction_status
+                NULL as sanction_status
             FROM users u
             LEFT JOIN referral_relations rr ON rr.referred_id = u.id AND rr.status = 'ACTIVE' AND rr.deleted_at IS NULL
             LEFT JOIN users referrer ON referrer.id = rr.referrer_id
@@ -969,10 +974,11 @@ public class AdminMiningRepository extends BaseRepository {
             params.put("activity_status", activityStatus);
         }
         
-        if (sanctionStatus != null && !"ALL".equals(sanctionStatus)) {
-            sql.append(" AND u.sanction_status = :sanction_status");
-            params.put("sanction_status", sanctionStatus);
-        }
+        // sanction_status 컬럼이 users 테이블에 없으므로 필터 제거
+        // if (sanctionStatus != null && !"ALL".equals(sanctionStatus)) {
+        //     sql.append(" AND u.sanction_status = :sanction_status");
+        //     params.put("sanction_status", sanctionStatus);
+        // }
         
         if (sortType != null) {
             switch (sortType) {
@@ -1027,9 +1033,10 @@ public class AdminMiningRepository extends BaseRepository {
             countSql.append(" AND u.status = :activity_status");
         }
         
-        if (sanctionStatus != null && !"ALL".equals(sanctionStatus)) {
-            countSql.append(" AND u.sanction_status = :sanction_status");
-        }
+        // sanction_status 컬럼이 users 테이블에 없으므로 필터 제거
+        // if (sanctionStatus != null && !"ALL".equals(sanctionStatus)) {
+        //     countSql.append(" AND u.sanction_status = :sanction_status");
+        // }
         
         return query(client, countSql.toString(), params)
             .compose(countRows -> {

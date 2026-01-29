@@ -506,7 +506,7 @@ public class AdminMiningService extends BaseService {
         // 헤더 생성
         Row headerRow = sheet.createRow(0);
         String[] headers = {
-            "ID", "회원ID", "추천인(부모)", "닉네임", "이메일", "레벨",
+            "ID", "회원ID", "추천인(부모)", "닉네임", "레벨",
             "채굴 시작 시간", "채굴 종료 시간", "채굴량", "누적 채굴량", "채굴효율", "활동상태"
         };
         
@@ -528,7 +528,7 @@ public class AdminMiningService extends BaseService {
             createCell(row, colNum++, record.getUserId(), dataStyle);
             createCell(row, colNum++, record.getReferrerNickname(), dataStyle);
             createCell(row, colNum++, record.getNickname(), dataStyle);
-            createCell(row, colNum++, record.getEmail(), dataStyle);
+            // email 컬럼 제거 (users 테이블에 email 컬럼 없음)
             createCell(row, colNum++, record.getLevel(), dataStyle);
             
             // 채굴 시작 시간

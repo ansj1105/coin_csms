@@ -23,8 +23,8 @@ class AdminAirdropHandlerTest extends HandlerTestBase {
     }
 
     @BeforeEach
-    void setUp(Vertx vertx, VertxTestContext testContext) {
-        super.init(vertx, testContext);
+    void setUp(VertxTestContext testContext) {
+        super.init(testContext);
     }
 
     @Test

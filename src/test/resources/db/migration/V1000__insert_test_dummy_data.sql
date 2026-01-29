@@ -10,13 +10,13 @@ ON CONFLICT (login_id) DO UPDATE SET password_hash = EXCLUDED.password_hash;
 
 -- 테스트용 사용자 생성 (비밀번호: password123)
 -- BCrypt 해시: $2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG
-INSERT INTO users (login_id, password_hash, nickname, email, phone, status, level, referral_code, sanction_status, created_at, updated_at)
+INSERT INTO users (login_id, password_hash, nickname, status, level, referral_code, created_at, updated_at)
 VALUES 
-    ('testuser1', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저1', 'test1@example.com', '010-1111-1111', 'ACTIVE', 1, 'TEST001', 'WARNING', NOW() - INTERVAL '30 days', NOW()),
-    ('testuser2', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저2', 'test2@example.com', '010-2222-2222', 'ACTIVE', 2, 'TEST002', NULL, NOW() - INTERVAL '20 days', NOW()),
-    ('testuser3', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저3', 'test3@example.com', '010-3333-3333', 'ACTIVE', 1, 'TEST003', 'SUSPENDED', NOW() - INTERVAL '10 days', NOW()),
-    ('testuser4', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저4', 'test4@example.com', '010-4444-4444', 'ACTIVE', 3, 'TEST004', NULL, NOW() - INTERVAL '5 days', NOW()),
-    ('testuser5', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저5', 'test5@example.com', '010-5555-5555', 'INACTIVE', 2, 'TEST005', NULL, NOW() - INTERVAL '1 day', NOW())
+    ('testuser1', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저1', 'ACTIVE', 1, 'TEST001', NOW() - INTERVAL '30 days', NOW()),
+    ('testuser2', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저2', 'ACTIVE', 2, 'TEST002', NOW() - INTERVAL '20 days', NOW()),
+    ('testuser3', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저3', 'ACTIVE', 1, 'TEST003', NOW() - INTERVAL '10 days', NOW()),
+    ('testuser4', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저4', 'ACTIVE', 3, 'TEST004', NOW() - INTERVAL '5 days', NOW()),
+    ('testuser5', '$2a$10$f7R8Z3w4fHCDjrgZ1bCo8OynXzErkt4c9TQHXxxmTE6BfOAvukDFG', '테스트유저5', 'INACTIVE', 2, 'TEST005', NOW() - INTERVAL '1 day', NOW())
 ON CONFLICT (login_id) DO UPDATE SET password_hash = EXCLUDED.password_hash;
 
 -- 추천인 관계 설정

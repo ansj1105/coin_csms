@@ -369,7 +369,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
         // 헤더 행 생성
         Row headerRow = sheet.createRow(0);
         String[] headers = {
-            "ID", "로그인ID", "추천인ID", "추천인닉네임", "닉네임", "이메일", "레벨", 
+            "ID", "로그인ID", "추천인ID", "추천인닉네임", "닉네임", "레벨", 
             "초대코드", "팀원수", "래퍼럴수익", "총채굴보유량", 
             "활동상태", "제재상태", "가입일"
         };
@@ -391,7 +391,7 @@ public class AdminMemberService extends com.csms.common.service.BaseService {
             createCell(row, colNum++, member.getReferrerId(), dataStyle);
             createCell(row, colNum++, member.getReferrerNickname(), dataStyle);
             createCell(row, colNum++, member.getNickname(), dataStyle);
-            createCell(row, colNum++, member.getEmail(), dataStyle);
+            // email 컬럼 제거 (users 테이블에 email 컬럼 없음)
             createCell(row, colNum++, member.getLevel(), dataStyle);
             createCell(row, colNum++, member.getInvitationCode(), dataStyle);
             createCell(row, colNum++, member.getTeamMemberCount(), dataStyle);

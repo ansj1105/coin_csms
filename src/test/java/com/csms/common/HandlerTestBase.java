@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class HandlerTestBase {
     
     protected static int port = 8089;
+    protected static Vertx vertx;
     protected static PgPool pool; // PgPool로 변경
     protected static io.vertx.sqlclient.SqlClient sqlClient;
     protected static JWTAuth jwtAuth;
@@ -50,7 +51,8 @@ public class HandlerTestBase {
     }
     
     @BeforeAll
-    protected static void deployVerticle(final Vertx vertx, final VertxTestContext testContext) throws IOException {
+    protected static void deployVerticle(final VertxTestContext testContext) throws IOException {
+        vertx = Vertx.vertx();
         log.info("Test deployVerticle start");
         ensureTestEncryptionKey();
         
@@ -69,21 +71,21 @@ public class HandlerTestBase {
         // 환경 변수나 시스템 프로퍼티로 데이터베이스 설정 오버라이드
         JsonObject dbConfig = overrideDatabaseConfig(config.getJsonObject("database"));
         
-        // Flyway 설정도 업데이트 (URL만 database 설정에서, user/password는 flyway 설정 그대로 사용)
+        // Flyway 설정도 database 설정에서 직접 가져옴 (오버라이드된 값 사용)
         JsonObject flywayConfig = config.getJsonObject("flyway");
         if (flywayConfig != null && dbConfig != null) {
             String dbHost = dbConfig.getString("host", "localhost");
             Integer dbPort = dbConfig.getInteger("port", 5432);
             String dbName = dbConfig.getString("database");
-            // URL만 database 설정에서 가져오고, user/password는 flyway 설정의 값을 유지
-            // flyway 설정에 user/password가 없을 때만 database 설정 사용
+            String dbUser = dbConfig.getString("user");
+            String dbPassword = dbConfig.getString("password");
+            
+            // URL과 user/password 모두 database 설정에서 가져옴 (환경 변수 오버라이드 포함)
             flywayConfig.put("url", String.format("jdbc:postgresql://%s:%d/%s", dbHost, dbPort, dbName));
-            if (!flywayConfig.containsKey("user")) {
-                flywayConfig.put("user", dbConfig.getString("user"));
-            }
-            if (!flywayConfig.containsKey("password")) {
-                flywayConfig.put("password", dbConfig.getString("password"));
-            }
+            flywayConfig.put("user", dbUser);
+            flywayConfig.put("password", dbPassword);
+            
+            log.info("Flyway configuration - URL: {}, User: {}", flywayConfig.getString("url"), dbUser);
         }
         
         JsonObject jwtConfig = config.getJsonObject("jwt");
@@ -121,7 +123,7 @@ public class HandlerTestBase {
     }
     
     @BeforeEach
-    protected void init(Vertx vertx, VertxTestContext testContext) {
+    protected void init(VertxTestContext testContext) {
         testContext.verify(() -> {
             try {
                 migration();
@@ -133,14 +135,16 @@ public class HandlerTestBase {
     }
     
     @AfterAll
-    protected static void close(final Vertx vertx) {
+    protected static void close() {
         if (pool != null) {
             pool.close();
         }
         if (sqlClient != null) {
             sqlClient.close();
         }
-        vertx.close();
+        if (vertx != null) {
+            vertx.close();
+        }
     }
     
     /**

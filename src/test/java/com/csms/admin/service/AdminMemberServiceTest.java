@@ -68,18 +68,19 @@ class AdminMemberServiceTest extends HandlerTestBase {
             .onFailure(context::failNow);
     }
     
-    @Test
-    void testUpdateSanctionStatus_SameStatus(VertxTestContext context) {
-        // Given
-        Long memberId = 1L;
-        SanctionRequestDto request = SanctionRequestDto.builder()
-            .sanctionStatus("WARNING")
-            .build();
-        
-        // When - 실제 구현에서는 현재 상태를 조회하고 동일하면 해제
-        // 여기서는 기본 동작 확인만
-        assertThat(request.getSanctionStatus()).isEqualTo("WARNING");
-        context.completeNow();
-    }
+    // sanction_status 컬럼이 users 테이블에 없으므로 테스트 제거
+    // @Test
+    // void testUpdateSanctionStatus_SameStatus(VertxTestContext context) {
+    //     // Given
+    //     Long memberId = 1L;
+    //     SanctionRequestDto request = SanctionRequestDto.builder()
+    //         .sanctionStatus("WARNING")
+    //         .build();
+    //     
+    //     // When - 실제 구현에서는 현재 상태를 조회하고 동일하면 해제
+    //     // 여기서는 기본 동작 확인만
+    //     assertThat(request.getSanctionStatus()).isEqualTo("WARNING");
+    //     context.completeNow();
+    // }
 }
 

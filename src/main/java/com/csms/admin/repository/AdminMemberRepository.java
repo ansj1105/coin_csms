@@ -58,7 +58,7 @@ public class AdminMemberRepository extends BaseRepository {
                 u.level,
                 u.referral_code as invitation_code,
                 u.status as activity_status,
-                u.sanction_status,
+                NULL as sanction_status,
                 u.created_at as registered_at,
                 rr.referrer_id,
                 referrer.nickname as referrer_nickname,
@@ -145,14 +145,15 @@ public class AdminMemberRepository extends BaseRepository {
             params.put("activity_status", activityStatus);
         }
         
-        if (sanctionStatus != null && !sanctionStatus.equals("ALL")) {
-            if (sanctionStatus.equals("NONE")) {
-                sql.append(" AND (u.sanction_status IS NULL OR u.sanction_status = '')");
-            } else {
-                sql.append(" AND u.sanction_status = :sanction_status");
-                params.put("sanction_status", sanctionStatus);
-            }
-        }
+        // sanction_status 컬럼이 users 테이블에 없으므로 필터 제거
+        // if (sanctionStatus != null && !sanctionStatus.equals("ALL")) {
+        //     if (sanctionStatus.equals("NONE")) {
+        //         sql.append(" AND (u.sanction_status IS NULL OR u.sanction_status = '')");
+        //     } else {
+        //         sql.append(" AND u.sanction_status = :sanction_status");
+        //         params.put("sanction_status", sanctionStatus);
+        //     }
+        // }
         
         // COUNT 쿼리 (ORDER BY, LIMIT, OFFSET 제외)
         String countSql = "SELECT COUNT(*) as total FROM (" + sql.toString() + ") as filtered";
@@ -218,15 +219,15 @@ public class AdminMemberRepository extends BaseRepository {
                 u.level,
                 u.referral_code as invitation_code,
                 u.status as activity_status,
-                u.sanction_status,
+                NULL as sanction_status,
                 u.gender,
-                u.age,
-                u.birth_date,
+                NULL as age,
+                NULL as birth_date,
                 u.phone,
-                u.kakao_id,
+                NULL as kakao_id,
                 u.created_at as registered_at,
-                u.last_ip_address,
-                u.last_login_at,
+                NULL as last_ip_address,
+                NULL as last_login_at,
                 rr.referrer_id,
                 referrer.nickname as referrer_nickname,
                 COALESCE(team_stats.team_member_count, 0) as team_member_count,
@@ -329,26 +330,33 @@ public class AdminMemberRepository extends BaseRepository {
             });
     }
     
+    // sanction_status 컬럼이 users 테이블에 없으므로 메서드 비활성화
     public Future<Void> updateSanctionStatus(SqlClient client, Long memberId, String sanctionStatus) {
-        String sql = """
-            UPDATE users
-            SET sanction_status = :sanction_status,
-                updated_at = NOW()
-            WHERE id = :member_id
-            AND deleted_at IS NULL
-            """;
+        // sanction_status 컬럼이 users 테이블에 없으므로 업데이트 불가
+        // 대신 사용자 상태(status)를 사용하거나 별도 테이블에 저장해야 함
+        log.warn("updateSanctionStatus called but sanction_status column does not exist in users table");
+        return Future.succeededFuture();
         
-        Map<String, Object> params = new HashMap<>();
-        params.put("member_id", memberId);
-        params.put("sanction_status", sanctionStatus);
-        
-        return query(client, sql, params)
-            .map(updateResult -> {
-                if (updateResult.rowCount() == 0) {
-                    throw new com.csms.common.exceptions.NotFoundException("Member not found");
-                }
-                return null;
-            });
+        // 원래 코드 (주석 처리)
+        // String sql = """
+        //     UPDATE users
+        //     SET sanction_status = :sanction_status,
+        //         updated_at = NOW()
+        //     WHERE id = :member_id
+        //     AND deleted_at IS NULL
+        //     """;
+        // 
+        // Map<String, Object> params = new HashMap<>();
+        // params.put("member_id", memberId);
+        // params.put("sanction_status", sanctionStatus);
+        // 
+        // return query(client, sql, params)
+        //     .map(updateResult -> {
+        //         if (updateResult.rowCount() == 0) {
+        //             throw new com.csms.common.exceptions.NotFoundException("Member not found");
+        //         }
+        //         return null;
+        //     });
     }
     
     public Future<Void> updateMember(SqlClient client, Long memberId, String phone, Integer level) {
