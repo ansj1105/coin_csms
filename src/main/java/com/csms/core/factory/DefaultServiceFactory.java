@@ -366,7 +366,8 @@ public class DefaultServiceFactory implements ServiceFactory {
     public AdminAirdropHandler getAdminAirdropHandler(Vertx vertx) {
         return new AdminAirdropHandler(
             vertx,
-            getAdminAirdropService()
+            getAdminAirdropService(),
+            jwtAuth
         );
     }
     

@@ -5,6 +5,7 @@ import com.csms.admin.repository.AdminAirdropRepository;
 import com.csms.common.exceptions.BadRequestException;
 import com.csms.common.exceptions.NotFoundException;
 import com.csms.common.service.BaseService;
+import com.csms.user.repository.UserRepository;
 import io.vertx.core.Future;
 import io.vertx.pgclient.PgPool;
 import lombok.extern.slf4j.Slf4j;
@@ -16,10 +17,12 @@ import java.time.LocalDateTime;
 public class AdminAirdropService extends BaseService {
     
     private final AdminAirdropRepository repository;
+    private final UserRepository userRepository;
     
     public AdminAirdropService(PgPool pool) {
         super(pool);
         this.repository = new AdminAirdropRepository();
+        this.userRepository = new UserRepository();
     }
     
     /**
@@ -75,31 +78,59 @@ public class AdminAirdropService extends BaseService {
         }
         
         // unlockDate 계산
-        LocalDateTime unlockDate = request.getUnlockDate();
-        Integer daysRemaining = request.getDaysRemaining();
+        LocalDateTime requestUnlockDate = request.getUnlockDate();
+        Integer requestDaysRemaining = request.getDaysRemaining();
         
-        if (unlockDate == null && daysRemaining == null) {
+        if (requestUnlockDate == null && requestDaysRemaining == null) {
             return Future.failedFuture(new BadRequestException("unlockDate 또는 daysRemaining 중 하나는 필수입니다."));
         }
         
-        if (unlockDate == null && daysRemaining != null) {
-            unlockDate = LocalDateTime.now().plusDays(daysRemaining);
-        } else if (unlockDate != null && daysRemaining == null) {
+        // final 변수로 계산
+        final LocalDateTime unlockDate;
+        final Integer daysRemaining;
+        
+        if (requestUnlockDate == null && requestDaysRemaining != null) {
+            unlockDate = LocalDateTime.now().plusDays(requestDaysRemaining);
+            daysRemaining = requestDaysRemaining;
+        } else if (requestUnlockDate != null && requestDaysRemaining == null) {
+            unlockDate = requestUnlockDate;
             // unlockDate가 있으면 daysRemaining 계산
-            daysRemaining = (int) java.time.temporal.ChronoUnit.DAYS.between(LocalDateTime.now(), unlockDate);
-            if (daysRemaining < 0) {
-                daysRemaining = 0;
-            }
+            int calculatedDays = (int) java.time.temporal.ChronoUnit.DAYS.between(LocalDateTime.now(), requestUnlockDate);
+            daysRemaining = calculatedDays < 0 ? 0 : calculatedDays;
+        } else {
+            // 둘 다 있는 경우
+            unlockDate = requestUnlockDate;
+            daysRemaining = requestDaysRemaining;
         }
         
-        return repository.createPhase(
-            client,
-            request.getUserId(),
-            request.getPhase(),
-            request.getAmount(),
-            unlockDate,
-            daysRemaining
-        );
+        // 사용자 존재 여부 확인
+        return userRepository.getUserById(client, request.getUserId())
+            .compose(user -> {
+                if (user == null) {
+                    log.warn("에어드랍 Phase 생성 실패 - 사용자를 찾을 수 없음: userId: {}", request.getUserId());
+                    return Future.failedFuture(new NotFoundException("사용자를 찾을 수 없습니다. userId: " + request.getUserId()));
+                }
+                
+                // Phase 생성
+                return repository.createPhase(
+                    client,
+                    request.getUserId(),
+                    request.getPhase(),
+                    request.getAmount(),
+                    unlockDate,
+                    daysRemaining
+                );
+            })
+            .recover(throwable -> {
+                // 외래 키 제약 조건 위반 에러 처리
+                if (throwable.getMessage() != null && 
+                    (throwable.getMessage().contains("foreign key constraint") || 
+                     throwable.getMessage().contains("fk_airdrop_phases_user"))) {
+                    log.error("에어드랍 Phase 생성 실패 - 외래 키 제약 조건 위반: userId: {}", request.getUserId(), throwable);
+                    return Future.failedFuture(new NotFoundException("사용자를 찾을 수 없습니다. userId: " + request.getUserId()));
+                }
+                return Future.failedFuture(throwable);
+            });
     }
     
     /**

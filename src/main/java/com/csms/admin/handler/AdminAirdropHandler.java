@@ -2,29 +2,40 @@ package com.csms.admin.handler;
 
 import com.csms.admin.dto.*;
 import com.csms.admin.service.AdminAirdropService;
+import com.csms.common.enums.UserRole;
 import com.csms.common.handler.BaseHandler;
+import com.csms.common.utils.AuthUtils;
 import com.csms.common.utils.ErrorHandler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.JWTAuthHandler;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class AdminAirdropHandler extends BaseHandler {
     
     private final AdminAirdropService service;
+    private final JWTAuth jwtAuth;
     
     public AdminAirdropHandler(
         Vertx vertx,
-        AdminAirdropService service
+        AdminAirdropService service,
+        JWTAuth jwtAuth
     ) {
         super(vertx);
         this.service = service;
+        this.jwtAuth = jwtAuth;
     }
     
     public Router getRouter() {
         Router router = Router.router(vertx);
+        
+        // 인증 및 권한 체크 미들웨어
+        router.route().handler(JWTAuthHandler.create(jwtAuth));
+        router.route().handler(AuthUtils.hasRole(UserRole.ADMIN, UserRole.SUPER_ADMIN));
         
         // Phase CRUD
         router.get("/phases").handler(this::getPhases);

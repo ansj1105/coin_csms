@@ -215,7 +215,18 @@ public class AdminAirdropRepository extends BaseRepository {
                 Long phaseId = getLong(row, "id");
                 return getPhaseById(client, phaseId);
             })
-            .onFailure(throwable -> log.error("에어드랍 Phase 생성 실패", throwable));
+            .recover(throwable -> {
+                // 외래 키 제약 조건 위반 에러 처리
+                String errorMessage = throwable.getMessage();
+                if (errorMessage != null && 
+                    (errorMessage.contains("foreign key constraint") || 
+                     errorMessage.contains("fk_airdrop_phases_user"))) {
+                    log.error("에어드랍 Phase 생성 실패 - 외래 키 제약 조건 위반: userId: {}", userId, throwable);
+                    return Future.failedFuture(new RuntimeException("사용자를 찾을 수 없습니다. userId: " + userId));
+                }
+                log.error("에어드랍 Phase 생성 실패 - userId: {}, phase: {}", userId, phase, throwable);
+                return Future.failedFuture(throwable);
+            });
     }
     
     /**
