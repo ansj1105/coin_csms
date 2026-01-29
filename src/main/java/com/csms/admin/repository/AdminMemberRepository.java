@@ -154,7 +154,7 @@ public class AdminMemberRepository extends BaseRepository {
             }
         }
         
-        // COUNT 쿼리
+        // COUNT 쿼리 (ORDER BY, LIMIT, OFFSET 제외)
         String countSql = "SELECT COUNT(*) as total FROM (" + sql.toString() + ") as filtered";
         
         // 정렬 및 페이지네이션
@@ -163,8 +163,12 @@ public class AdminMemberRepository extends BaseRepository {
         params.put("limit", limit);
         params.put("offset", offset);
         
-        // COUNT 실행
-        return query(client, countSql, params)
+        // COUNT 실행 (limit, offset 파라미터 제외)
+        Map<String, Object> countParams = new HashMap<>(params);
+        countParams.remove("limit");
+        countParams.remove("offset");
+        
+        return query(client, countSql, countParams)
             .compose(countRows -> {
                 Long total = 0L;
                 if (countRows.size() > 0) {
