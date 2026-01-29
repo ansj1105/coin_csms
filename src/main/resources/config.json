@@ -63,8 +63,8 @@
       "apiKey": "your-secret-monitoring-key-here"
     },
     "google": {
-      "clientSecret": "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",
-      "clientId": "658980808178-dkgebjhtl42v8si66o1b521vgiq9pf4h.apps.googleusercontent.com",
+      "clientSecret": "your-google-client-secret-here",
+      "clientId": "your-google-client-id-here",
       "redirectUri": "http://localhost:3000/auth/google/callback"
     }
   },
@@ -138,8 +138,8 @@
       "apiKey": "your-secret-monitoring-key-here"
     },
     "google": {
-      "clientSecret": "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",
-      "clientId": "658980808178-dkgebjhtl42v8si66o1b521vgiq9pf4h.apps.googleusercontent.com",
+      "clientSecret": "your-google-client-secret-here",
+      "clientId": "your-google-client-id-here",
       "redirectUri": "http://localhost:3000/auth/google/callback"
     }
   },

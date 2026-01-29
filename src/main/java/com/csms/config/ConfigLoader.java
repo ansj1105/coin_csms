@@ -61,6 +61,9 @@ public class ConfigLoader {
                 // env 필드 추가
                 envConfig.put("env", env);
                 
+                // 환경 변수로 민감한 정보 오버라이드
+                overrideWithEnvVars(envConfig);
+                
                 return envConfig;
             })
             .onSuccess(config -> log.info("Config loaded successfully"))
@@ -89,6 +92,10 @@ public class ConfigLoader {
                 }
                 
                 envConfig.put("env", env);
+                
+                // 환경 변수로 민감한 정보 오버라이드
+                overrideWithEnvVars(envConfig);
+                
                 return envConfig;
             })
             .onSuccess(config -> log.info("Config loaded successfully for env: {}", env))
@@ -100,6 +107,69 @@ public class ConfigLoader {
      */
     public static Future<JsonObject> loadForEnv(Vertx vertx, String env) {
         return loadForEnv(vertx, "src/main/resources/config.json", env);
+    }
+    
+    /**
+     * 환경 변수로 민감한 정보 오버라이드
+     * 환경 변수가 설정되어 있으면 config.json의 값을 덮어씁니다.
+     */
+    private static void overrideWithEnvVars(JsonObject config) {
+        // Database 설정
+        JsonObject dbConfig = config.getJsonObject("database");
+        if (dbConfig != null) {
+            overrideIfSet(dbConfig, "host", "DB_HOST");
+            overrideIfSet(dbConfig, "port", "DB_PORT", Integer::parseInt);
+            overrideIfSet(dbConfig, "database", "DB_DATABASE");
+            overrideIfSet(dbConfig, "user", "DB_USER");
+            overrideIfSet(dbConfig, "password", "DB_PASSWORD");
+        }
+        
+        // JWT 설정
+        JsonObject jwtConfig = config.getJsonObject("jwt");
+        if (jwtConfig != null) {
+            overrideIfSet(jwtConfig, "secret", "JWT_SECRET");
+        }
+        
+        // SMTP 설정
+        JsonObject smtpConfig = config.getJsonObject("smtp");
+        if (smtpConfig != null) {
+            overrideIfSet(smtpConfig, "username", "SMTP_USERNAME");
+            overrideIfSet(smtpConfig, "password", "SMTP_PASSWORD");
+        }
+        
+        // Google OAuth 설정
+        JsonObject googleConfig = config.getJsonObject("google");
+        if (googleConfig != null) {
+            overrideIfSet(googleConfig, "clientSecret", "GOOGLE_CLIENT_SECRET");
+            overrideIfSet(googleConfig, "clientId", "GOOGLE_CLIENT_ID");
+            overrideIfSet(googleConfig, "redirectUri", "GOOGLE_REDIRECT_URI");
+        }
+        
+        // Monitoring 설정
+        JsonObject monitoringConfig = config.getJsonObject("monitoring");
+        if (monitoringConfig != null) {
+            overrideIfSet(monitoringConfig, "apiKey", "MONITORING_API_KEY");
+        }
+    }
+    
+    private static void overrideIfSet(JsonObject config, String key, String envVar) {
+        String value = System.getenv(envVar);
+        if (value != null && !value.trim().isEmpty()) {
+            config.put(key, value);
+            log.debug("Overriding {} with environment variable {}", key, envVar);
+        }
+    }
+    
+    private static void overrideIfSet(JsonObject config, String key, String envVar, java.util.function.Function<String, Object> converter) {
+        String value = System.getenv(envVar);
+        if (value != null && !value.trim().isEmpty()) {
+            try {
+                config.put(key, converter.apply(value));
+                log.debug("Overriding {} with environment variable {}", key, envVar);
+            } catch (Exception e) {
+                log.warn("Failed to convert environment variable {} for {}: {}", envVar, key, e.getMessage());
+            }
+        }
     }
 }
 
